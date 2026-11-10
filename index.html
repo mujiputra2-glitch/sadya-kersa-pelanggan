@@ -8,7 +8,7 @@
 <meta name="robots" content="noindex">
 <link rel="icon" href="icon.png">
 <link rel="apple-touch-icon" href="icon.png">
-<script>window.SKP_API = {"url":"https://script.google.com/macros/s/AKfycbwzm6vI7CH0DHvUhK8n6pCoSvNnOQgrvN453tYC5upts-OmrElAP5eH-1k0rrLAGQy5/exec","version":"1.1.1","mode":"prod","privacy":"https://mujiputra2-glitch.github.io/sadya-kersa-sales-privacy/pelanggan/"};</script>
+<script>window.SKP_API = {"url":"https://script.google.com/macros/s/AKfycbwzm6vI7CH0DHvUhK8n6pCoSvNnOQgrvN453tYC5upts-OmrElAP5eH-1k0rrLAGQy5/exec","version":"1.1.2","mode":"prod","privacy":"https://pelanggan.sadyakersa.com/privasi/"};</script>
 <meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
@@ -258,8 +258,47 @@ function loadHome(spinner) {
   if (spinner) busy(true, 'Memuat data...');
   return call('skpHome', SKP.token).then(function (d) {
     busy(false); SKP.data = d; store('skp_home', JSON.stringify(d));
-    $('vLogin').classList.add('hide'); $('vApp').classList.remove('hide'); render();
+    $('vLogin').classList.add('hide'); $('vApp').classList.remove('hide'); render(); remindAfterHome(d);
   }).catch(function (e) { busy(false); if (SKP.token) toast(e.message); });
+}
+
+// ---------- reminders (Firman 10 Nov: pop-up and phone notification, like a bank app) ----------
+function remindList(d) {
+  var out = [], today = d.today || new Date().toISOString().slice(0, 10), soon = function (iso) { return iso && iso <= addDays(today, 7); };
+  var ship = (d.deliveries || []).filter(function (s) { return s.status === 'Dikirim'; }).length;
+  if (ship) out.push([ship + ' kiriman perlu dikonfirmasi setelah barang diterima', 'kirim']);
+  var cek = (d.invoices || []).filter(function (i) { return i.canVerify && !i.verif; }).length;
+  if (cek) out.push([cek + ' invoice perlu dicek', 'inv']);
+  (d.invoices || []).filter(function (i) { return i.status !== 'Lunas' && soon(i.due); }).slice(0, 3).forEach(function (i) {
+    out.push(['Invoice ' + i.inv + (i.due < today ? ' lewat jatuh tempo ' : ' jatuh tempo ') + tglPanjang(i.due) + ', ' + rp(i.total), 'invd:' + i.inv]);
+  });
+  return out;
+}
+function addDays(iso, n) { var p = iso.split('-'), x = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2] + n)); return x.toISOString().slice(0, 10); }
+function remindGo(v) { closeSheet(); if (v.indexOf('invd:') === 0) go('invd', v.slice(5)); else go(v); }
+function remindAfterHome(d) {
+  try {
+    var list = remindList(d), today = new Date().toISOString().slice(0, 10);
+    remindNotify(list);
+    if (!list.length || store('skp_pop') === today || !$('sheet').classList.contains('hide')) return;
+    store('skp_pop', today);
+    openSheet('<h2>Pengingat hari ini</h2>' + list.map(function (x) {
+      return '<button class="item" onclick="remindGo(\'' + jsq(x[1]) + '\')"><span class="t"><b>' + esc(x[0]) + '</b></span>' + SKP_ICON.right + '</button>';
+    }).join('') + '<button class="btn block" style="margin-top:12px" onclick="closeSheet()">Tutup</button>');
+  } catch (e) { return; } // never blocks the home screen
+}
+function remindNotify(list) {
+  var ln = nativePlugin('LocalNotifications');
+  if (!ln) return;
+  ln.checkPermissions().then(function (p) { return p.display === 'granted' ? p : ln.requestPermissions(); }).then(function (p) {
+    if (!p || p.display !== 'granted') return;
+    return ln.cancel({ notifications: [{ id: 81 }] }).catch(function () {}).then(function () {
+      if (!list.length) return;
+      var at = new Date(); at.setHours(8, 0, 0, 0);
+      if (at <= new Date()) at.setDate(at.getDate() + 1);
+      return ln.schedule({ notifications: [{ id: 81, title: 'SNAPP: pengingat', body: list.map(function (x) { return x[0]; }).join('. ') + '.', schedule: { at: at, allowWhileIdle: true } }] });
+    });
+  }).catch(function () {});
 }
 
 // ---------- screens ----------
@@ -473,7 +512,8 @@ function vInvD(d) {
   if (!i) return '<div class="note amber">Invoice tidak ditemukan. Muat ulang data.</div>';
   var h = '<div class="tags" style="margin-top:14px"><i class="tag ' + (SKP_STEP[i.step.code] || '') + '">' + esc(i.step.text) + '</i>' + (i.status === 'Lunas' ? '<i class="tag green">Lunas' + (i.paidDate ? ' ' + esc(tgl(i.paidDate)) : '') + '</i>' : '<i class="tag grey">Belum lunas</i>') + '</div>';
   h += '<div class="doc"><div class="dochead">' + logoHtml() + '<div><b>INVOICE</b><span>' + esc(i.inv) + '</span></div></div>' +
-    '<dl class="kv"><dt>Tanggal</dt><dd>' + esc(tglPanjang(i.date)) + '</dd><dt>Kepada</dt><dd>' + esc(SKP.data.me.name) + '</dd>' + (i.mkt && i.mkt !== '-' ? '<dt>Melalui</dt><dd>' + esc(i.mkt) + '</dd>' : '') + '</dl>' +
+    '<dl class="kv"><dt>Tanggal</dt><dd>' + esc(tglPanjang(i.date)) + '</dd><dt>Kepada</dt><dd>' + esc(SKP.data.me.name) + '</dd>' +
+    (i.received ? '<dt>Barang diterima</dt><dd>' + esc(tglPanjang(i.received)) + '</dd>' + (i.status !== 'Lunas' && i.due ? '<dt>Jatuh tempo</dt><dd>' + esc(tglPanjang(i.due)) + ' (30 hari setelah barang diterima)</dd>' : '') : '') + (i.mkt && i.mkt !== '-' ? '<dt>Melalui</dt><dd>' + esc(i.mkt) + '</dd>' : '') + '</dl>' +
     '<table class="dtab"><thead><tr><th>Barang</th><th class="n">Jumlah</th><th class="n v">Nilai (Rp)</th></tr></thead><tbody>' + i.lines.map(function (l) {
       return '<tr><td>' + esc(l[0] || 'Barang') + '</td><td class="n">' + esc(qty(l[1])) + ' ' + esc(l[2]) + '</td><td class="n v">' + esc(num(l[3])) + '</td></tr>';
     }).join('') + '</tbody><tfoot><tr><td colspan="2">Total</td><td class="n v">' + esc(num(i.total)) + '</td></tr></tfoot></table>' +
