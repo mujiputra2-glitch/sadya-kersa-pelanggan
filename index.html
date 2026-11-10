@@ -296,7 +296,7 @@ function remindNotify(list) {
       if (!list.length) return;
       var at = new Date(); at.setHours(8, 0, 0, 0);
       if (at <= new Date()) at.setDate(at.getDate() + 1);
-      return ln.schedule({ notifications: [{ id: 81, title: 'SNAPP: pengingat', body: list.map(function (x) { return x[0]; }).join('. ') + '.', schedule: { at: at, allowWhileIdle: true } }] });
+      return ln.schedule({ notifications: [{ id: 81, title: 'SNAPP: pengingat', body: list.map(function (x) { return x[0]; }).join('. ') + '.', schedule: { at: at } }] });
     });
   }).catch(function () {});
 }
