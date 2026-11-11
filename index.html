@@ -8,7 +8,7 @@
 <meta name="robots" content="noindex">
 <link rel="icon" href="icon.png">
 <link rel="apple-touch-icon" href="icon.png">
-<script>window.SKP_API = {"url":"https://script.google.com/macros/s/AKfycbwzm6vI7CH0DHvUhK8n6pCoSvNnOQgrvN453tYC5upts-OmrElAP5eH-1k0rrLAGQy5/exec","version":"1.1.2","mode":"prod","privacy":"https://pelanggan.sadyakersa.com/privasi/"};</script>
+<script>window.SKP_API = {"url":"https://script.google.com/macros/s/AKfycbwzm6vI7CH0DHvUhK8n6pCoSvNnOQgrvN453tYC5upts-OmrElAP5eH-1k0rrLAGQy5/exec","version":"1.1.3","mode":"prod","privacy":"https://pelanggan.sadyakersa.com/privasi/"};</script>
 <meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
@@ -392,7 +392,8 @@ function vSj(d) {
         (c ? (c.ok ? '<b class="okv" aria-label="Sesuai">v</b>' : '<b class="badx" aria-label="Tidak sesuai">x</b><br><span class="small">' + esc(c.ket) + ' ' + esc(c.diff) + '</span>') : '-') + '</td></tr>';
     }).join('') + '</tbody></table>' + (s.note ? '<p class="small" style="white-space:pre-wrap">' + esc(s.note) + '</p>' : '') +
     '<div class="sign"><div>Pengirim<span>' + esc(s.sent ? 'CV Sadya Kersa' : '') + '</span></div><div>Penerima<span>' + esc(s.gotBy || '') + (s.got ? '<br>' + esc(stamp(s.got)) : '') + '</span></div></div></div>';
-  if (!nativePlugin('App') && typeof window.print === 'function') h += '<button class="btn block" style="margin-top:12px" onclick="window.print()">Cetak surat jalan</button>';
+  h += '<div class="btnrow" style="margin-top:12px"><button class="btn brand" onclick="docRun(\'print\',\'skpSjPdf\',\'' + jsq(s.no) + '\')">Cetak</button>' +
+    '<button class="btn" onclick="sjPdf(\'' + jsq(s.no) + '\')">Unduh PDF</button></div>';
   if (s.status !== 'Disiapkan') {
     h += '<div class="caption">Bukti kirim</div><div class="card"><dl class="kv"><dt>Dikirim</dt><dd>' + esc(stamp(s.sent)) + '</dd>' + (s.other ? '<dt>Bukti lain</dt><dd>' + esc(s.other) + '</dd>' : '') + '</dl>';
     if (s.photo) { var p = SKP.photos[s.no]; h += !p ? '<button class="btn block" style="margin-top:10px" onclick="loadPhoto(\'' + jsq(s.no) + '\')">' + SKP_ICON.cam + 'Lihat foto bukti kirim</button>' : p.err ? '<div class="note amber">' + esc(p.err) + '</div>' : '<img class="sjphoto" src="' + esc(p.url) + '" alt="Foto bukti kirim">'; }
@@ -407,6 +408,52 @@ function vSj(d) {
   if (s.status === 'Disiapkan') h += '<div class="note">Barang sedang disiapkan. Tombol konfirmasi muncul setelah barang dikirim.</div>';
   return h;
 }
+// Cetak and Unduh PDF (11 Nov: surat jalan and invoice easier to print). The server makes the PDF;
+// Cetak opens the phone's own print screen (native SkPrint plugin, any printer Android reaches), and in
+// a browser the PDF is printed from a hidden frame, or opened in a new tab when the browser refuses.
+// Unduh PDF: phone = save and share menu (WhatsApp, Drive), browser = download.
+function docPlugin(name) {
+  var c = window.Capacitor;
+  if (!c || !c.isNativePlatform || !c.isNativePlatform()) return null;
+  return (c.Plugins && c.Plugins[name]) || (c.registerPlugin ? c.registerPlugin(name) : null);
+}
+function docBlobUrl(r) {
+  var bin = atob(r.b64), arr = new Uint8Array(bin.length);
+  for (var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return URL.createObjectURL(new Blob([arr], { type: 'application/pdf' }));
+}
+function docRun(mode, fn) {
+  var args = Array.prototype.slice.call(arguments, 2);
+  busy(true, mode === 'print' ? 'Menyiapkan cetak...' : 'Membuat PDF...');
+  call.apply(null, [fn, docToken()].concat(args)).then(function (r) {
+    if (mode === 'print') {
+      var pr = docPlugin('SkPrint');
+      if (pr) return pr.printPdf({ base64: r.b64, name: r.name }).then(function () { busy(false); });
+      busy(false);
+      var url = docBlobUrl(r), fr = document.createElement('iframe');
+      fr.style.cssText = 'position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0';
+      fr.onload = function () {
+        try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch (e) { window.open(url, '_blank'); }
+        setTimeout(function () { fr.remove(); URL.revokeObjectURL(url); }, 60000);
+      };
+      fr.src = url; document.body.appendChild(fr);
+      return;
+    }
+    var fs = nativePlugin('Filesystem'), sh = nativePlugin('Share');
+    if (fs && sh) {
+      return fs.writeFile({ path: r.name, data: r.b64, directory: 'CACHE' }).then(function (w) {
+        busy(false);
+        return sh.share({ title: r.name, files: [w.uri], dialogTitle: 'Simpan atau kirim PDF' });
+      });
+    }
+    busy(false);
+    var u = docBlobUrl(r), a = document.createElement('a');
+    a.href = u; a.download = r.name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(u); }, 30000);
+  }).catch(function (e) { busy(false); if (!/cancel/i.test(String(e && e.message))) toast(e.message); });
+}
+function docToken() { return SKP.token; }
+function sjPdf(no) { docRun('pdf', 'skpSjPdf', no); }
 function loadPhoto(no) {
   busy(true, 'Memuat foto...');
   call('skpPhoto', SKP.token, no).then(function (url) { busy(false); SKP.photos[no] = { url: url }; render(); })
@@ -518,7 +565,8 @@ function vInvD(d) {
       return '<tr><td>' + esc(l[0] || 'Barang') + '</td><td class="n">' + esc(qty(l[1])) + ' ' + esc(l[2]) + '</td><td class="n v">' + esc(num(l[3])) + '</td></tr>';
     }).join('') + '</tbody><tfoot><tr><td colspan="2">Total</td><td class="n v">' + esc(num(i.total)) + '</td></tr></tfoot></table>' +
     (i.fresh ? '<p class="muted small">Order baru disetujui; rincian pajak mengikuti dokumen SIPLah.</p>' : '') + '</div>';
-  if (!nativePlugin('App') && typeof window.print === 'function') h += '<button class="btn block" style="margin-top:12px" onclick="window.print()">Cetak invoice</button>';
+  h += '<div class="btnrow" style="margin-top:12px"><button class="btn brand" onclick="docRun(\'print\',\'skpInvPdf\',\'' + jsq(i.inv) + '\')">Cetak</button>' +
+    '<button class="btn" onclick="docRun(\'pdf\',\'skpInvPdf\',\'' + jsq(i.inv) + '\')">Unduh PDF</button></div>';
   if (i.sj.length) h += '<div class="caption">Surat jalan</div>' + i.sj.map(function (no) { var s = sjOf(no) || {}; return '<button class="item" onclick="go(\'sj\',\'' + jsq(no) + '\')"><span class="t"><b>' + esc(no) + '</b><span>' + esc(s.status || '') + '</span></span>' + SKP_ICON.right + '</button>'; }).join('');
   var v = i.verif;
   h += '<div class="caption">Verifikasi sekolah</div><div class="card">';
