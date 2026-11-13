@@ -417,7 +417,12 @@
 // (PelangganApi.js, app: 'pelanggan'); window.SKP_API is set by the build (sadya-kersa-pelanggan-app).
 // checks: the school's per-item check of a delivery note while it is being filled (by SJ number);
 // pick / fuNote: files chosen on the File tab and their note.
-var SKP = { token: '', data: null, view: 'home', key: '', filter: 'all', photos: {}, shown: '', checks: {}, cf: {}, pick: [], fuNote: '' };
+var SKP = { token: '', data: null, view: 'home', key: '', filter: 'all', photos: {}, shown: '', checks: {}, cf: {}, pick: [], fuNote: '', op: '', upId: '' };
+// 13 Nov (audit, "logout bounces back"): every login and logout starts a new session number. An answer
+// that arrives for an older session never touches the screen (call()), and an older home load never
+// overwrites a newer one (SKP_HSEQ/SKP_HDONE). SKP.op = a write in progress: no second tap, and a
+// background refresh leaves its overlay alone.
+var SKP_SESS = 0, SKP_HSEQ = 0, SKP_HDONE = 0, SKP_LOADED = 0;
 var SKP_ICON = {
   out: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/></svg>',
   reload: '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12a8 8 0 1 1-2.3-5.7L20 8"/><path d="M20 3v5h-5"/></svg>',
@@ -481,38 +486,62 @@ function toast(msg, ok) {
   SKP_TOAST = setTimeout(function () { t.classList.add('out'); SKP_TOAST = setTimeout(function () { t.classList.add('hide'); t.classList.remove('out'); }, 210); }, Math.max(3200, String(msg).length * 70));
 }
 function nativePlugin(name) { var c = window.Capacitor; return c && c.isNativePlatform && c.isNativePlatform() && c.Plugins && c.Plugins[name] ? c.Plugins[name] : null; }
+function opStart(name) { if (SKP.op) return false; SKP.op = name; return true; }
+function opEnd() { SKP.op = ''; }
+function nowStamp() { var n = new Date(), p = function (x) { return ('0' + x).slice(-2); }; return n.getFullYear() + '-' + p(n.getMonth() + 1) + '-' + p(n.getDate()) + ' ' + p(n.getHours()) + ':' + p(n.getMinutes()); }
+// An error goes in its box when the box is still on screen, else in a toast (the screen may have changed).
+function showErr(id, msg) { var el = $(id), box = el && el.parentElement; if (box && el.isConnected && box.getClientRects().length) { el.textContent = msg; el.classList.remove('hide'); } else toast(msg); }
 
 function call(fn) {
-  var args = Array.prototype.slice.call(arguments, 1), cfg = window.SKP_API || {};
+  var args = Array.prototype.slice.call(arguments, 1), cfg = window.SKP_API || {}, sess = SKP_SESS;
   if (!cfg.url) return Promise.reject(new Error('Aplikasi belum terhubung ke server.'));
   var ms = fn === 'skpUpload' ? 180000 : 45000; // files take longer on a phone connection
   var ctl = typeof AbortController !== 'undefined' ? new AbortController() : null, timer = setTimeout(function () { if (ctl) ctl.abort(); }, ms);
-  return fetch(cfg.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow',
+  var p = fetch(cfg.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow',
     body: JSON.stringify({ app: 'pelanggan', fn: fn, args: args, v: cfg.version }), signal: ctl ? ctl.signal : undefined })
     .then(function (r) { clearTimeout(timer); if (!r.ok) throw new Error('Koneksi bermasalah (HTTP ' + r.status + '). Coba lagi.'); return r.text(); },
-      function () { clearTimeout(timer); throw new Error('Tidak ada koneksi internet. Coba lagi.'); })
+      function (e) {
+        clearTimeout(timer);
+        throw new Error(e && e.name === 'AbortError' ? 'Server lambat menjawab. Cek dulu apakah sudah tersimpan sebelum mengirim ulang.' : 'Tidak ada koneksi internet. Coba lagi.');
+      })
     .then(function (txt) {
       var j; try { j = JSON.parse(txt); } catch (e) { throw new Error('Jawaban server tidak terbaca. Coba lagi.'); }
       if (j && j.ok) { $('updBar').classList.add('hide'); return j.data; }
       if (j && j.error === 'UPDATE_APP') { $('updBar').classList.remove('hide'); throw new Error('Versi aplikasi ini sudah lama. Perbarui aplikasi.'); }
-      if (j && j.error === 'SESI_HABIS') { logoutLocal('Sesi habis, silakan masuk lagi.'); throw new Error('Sesi habis, silakan masuk lagi.'); }
+      if (j && j.error === 'SESI_HABIS') { if (sess === SKP_SESS) logoutLocal('Sesi habis, silakan masuk lagi.'); throw new Error('Sesi habis, silakan masuk lagi.'); }
       throw new Error(j && j.error ? j.error : 'Server tidak menjawab.');
     });
+  var stale = function () { return new Promise(function () {}); }; // dropped: the user logged out or switched school meanwhile
+  return p.then(function (d) { return sess === SKP_SESS ? d : stale(); }, function (e) { if (sess !== SKP_SESS) return stale(); throw e; });
 }
 
 // ---------- login ----------
 function showLogin(msg) { $('vApp').classList.add('hide'); $('vLogin').classList.remove('hide'); $('lgErr').classList.toggle('hide', !msg); $('lgErr').textContent = msg || ''; }
 function doLogin() {
   var who = $('lgWho').value.trim(), pin = $('lgPin').value.trim();
+  if (SKP.op) return; // Enter and the button together, or a second tap
   if (!who || !/^\d{6}$/.test(pin)) { showLogin('Isi username dan PIN 6 angka.'); shake(); return; }
-  busy(true, 'Masuk...');
-  call('skpLogin', who, pin).then(function (r) {
-    SKP.token = r.token; store('skp_token', r.token); store('skp_who', who); $('lgPin').value = '';
+  opStart('login'); busy(true, 'Masuk...');
+  var slow = setTimeout(function () { if (SKP.op === 'login') busy(true, 'Menyiapkan data sekolah...'); }, 2500);
+  call('skpLogin', who, pin, true).then(function (r) {
+    clearTimeout(slow); opEnd(); SKP_SESS++;
+    SKP.token = r.token; store('skp_token', r.token); store('skp_who', who); $('lgPin').value = ''; $('lgPin').blur();
+    if (r.home) { homeReady(r.home, true); return; }
     return loadHome(true);
-  }).catch(function (e) { busy(false); showLogin(e.message); shake(); });
+  }).catch(function (e) { clearTimeout(slow); opEnd(); busy(false); showLogin(e.message); shake(); });
 }
 function shake() { var c = document.querySelector('.lcard'); if (!c) return; c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); }
-function logoutLocal(msg) { SKP.token = ''; SKP.data = null; SKP.photos = {}; store('skp_token', null); store('skp_home', null); showLogin(msg || ''); }
+// Everything of the old school goes: screen state, picked files, the open sheet, the daily reminder.
+function logoutLocal(msg) {
+  SKP_SESS++; SKP.op = '';
+  SKP.token = ''; SKP.data = null; SKP.photos = {}; SKP.view = 'home'; SKP.key = ''; SKP.filter = 'all'; SKP.shown = '';
+  SKP.checks = {}; SKP.cf = {}; SKP.pick = []; SKP.fuNote = ''; SKP.upId = '';
+  store('skp_token', null); store('skp_home', null); store('skp_pop', null);
+  busy(false); $('sheet').classList.add('hide'); $('sheet').classList.remove('closing');
+  var ln = nativePlugin('LocalNotifications');
+  if (ln) ln.cancel({ notifications: [{ id: 81 }] }).catch(function () {});
+  showLogin(msg || '');
+}
 function doLogout() {
   if (!confirm('Keluar dari aplikasi di HP ini?')) return;
   var t = SKP.token; logoutLocal(''); call('skpLogout', t).catch(function () {});
@@ -532,12 +561,36 @@ function refreshHome(b) {
   if (b) b.classList.add('spinning');
   loadHome(false).then(function () { if (b) b.classList.remove('spinning'); });
 }
+// spinner: this load owns the overlay. A background load (spinner false) never hides an overlay a
+// write owns, never renders over a write in progress, and never redraws a form the user is typing in.
 function loadHome(spinner) {
   if (spinner) { if (SKP.data) busy(true, 'Memuat data...'); else showSkeleton(); }
+  var seq = ++SKP_HSEQ;
   return call('skpHome', SKP.token).then(function (d) {
-    busy(false); SKP.data = d; store('skp_home', JSON.stringify(d));
-    $('vLogin').classList.add('hide'); $('vApp').classList.remove('hide'); render(); remindAfterHome(d);
-  }).catch(function (e) { busy(false); if (!SKP.token) return; if (!SKP.data) showLogin(e.message); else toast(e.message); });
+    if (seq < SKP_HDONE) return; // an older answer after a newer one
+    SKP_HDONE = seq;
+    homeReady(d, spinner);
+  }).catch(function (e) {
+    if (spinner) busy(false);
+    if (!SKP.token) return;
+    if (!SKP.data) homeError(e.message); else if (spinner || !SKP.op) toast(e.message);
+  });
+}
+function homeReady(d, ownsBusy) {
+  SKP.data = d; SKP_LOADED = Date.now(); store('skp_home', JSON.stringify(d));
+  if (ownsBusy) busy(false);
+  $('vLogin').classList.add('hide'); $('vApp').classList.remove('hide');
+  if (SKP.op) return; // the write reloads and draws when it is done
+  var a = document.activeElement;
+  if (!ownsBusy && SKP.shown && SKP.shown !== 'sk' && SKP.shown !== 'err' && a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return; // fresh data shows on the next screen change
+  render(); remindAfterHome(d);
+}
+// The first load failed (slow school internet): stay in the app with a retry, never back to the PIN.
+function homeError(msg) {
+  busy(false); $('vLogin').classList.add('hide'); $('vApp').classList.remove('hide');
+  $('main').innerHTML = '<div class="float lift" style="text-align:center"><p style="margin:4px 0 14px">' + esc(msg) + '</p>' +
+    '<button class="btn cta block" onclick="loadHome(true)">Coba lagi</button><button class="btn block" style="margin-top:10px" onclick="doLogout()">Keluar</button></div>';
+  SKP.shown = 'err';
 }
 
 // ---------- reminders (Firman 10 Nov: pop-up and phone notification, like a bank app) ----------
@@ -568,7 +621,13 @@ function remindAfterHome(d) {
 function remindNotify(list) {
   var ln = nativePlugin('LocalNotifications');
   if (!ln) return;
-  ln.checkPermissions().then(function (p) { return p.display === 'granted' ? p : ln.requestPermissions(); }).then(function (p) {
+  // Asked once (13 Nov audit): the permission dialog itself pauses and resumes the app.
+  ln.checkPermissions().then(function (p) {
+    if (p.display === 'granted') return p;
+    if (store('skp_notif_asked')) return null;
+    store('skp_notif_asked', '1');
+    return ln.requestPermissions();
+  }).then(function (p) {
     if (!p || p.display !== 'granted') return;
     return ln.cancel({ notifications: [{ id: 81 }] }).catch(function () {}).then(function () {
       if (!list.length) return;
@@ -825,8 +884,13 @@ function docBlobUrl(r) {
 }
 function docRun(mode, fn) {
   var args = Array.prototype.slice.call(arguments, 2);
+  if (!opStart('doc')) return;
+  var phoneWeb = mode === 'print' && !docPlugin('SkPrint') && !nativePlugin('App') && window.matchMedia && matchMedia('(pointer: coarse)').matches;
+  if (phoneWeb) mode = 'pdf';
   busy(true, mode === 'print' ? 'Menyiapkan cetak...' : 'Membuat PDF...');
   call.apply(null, [fn, docToken()].concat(args)).then(function (r) {
+    opEnd();
+    if (phoneWeb) toast('PDF diunduh. Buka file itu untuk mencetak dari HP.');
     if (mode === 'print') {
       var pr = docPlugin('SkPrint');
       if (pr) return pr.printPdf({ base64: r.b64, name: r.name }).then(function () { busy(false); });
@@ -851,7 +915,7 @@ function docRun(mode, fn) {
     var u = docBlobUrl(r), a = document.createElement('a');
     a.href = u; a.download = r.name; document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(u); }, 30000);
-  }).catch(function (e) { busy(false); if (!/cancel/i.test(String(e && e.message))) toast(e.message); });
+  }).catch(function (e) { opEnd(); busy(false); if (!/cancel/i.test(String(e && e.message))) toast(e.message); });
 }
 function docToken() { return SKP.token; }
 function sjPdf(no) { docRun('pdf', 'skpSjPdf', no); }
@@ -900,18 +964,22 @@ function checkForm(s) {
 function ckSet(no, i, ok) { var c = checksOf(sjOf(no))[i]; c.ok = ok; if (ok) { c.diff = ''; c.ket = ''; } SKP.pop = no + ':' + i; render(); if (!ok && $('ckd' + i)) $('ckd' + i).focus(); }
 function ckVal(no, i, k, v) { checksOf(sjOf(no))[i][k] = v; }
 function doConfirm(no) {
-  var s = sjOf(no), st = checksOf(s), cf = SKP.cf[no] || {}, err = $('cfErr');
+  var s = sjOf(no), st = checksOf(s), cf = SKP.cf[no] || {};
   var miss = st.map(function (c, i) { return c.ok === null ? i + 1 : 0; }).filter(Boolean);
-  var show = function (m) { err.textContent = m; err.classList.remove('hide'); };
+  var show = function (m) { showErr('cfErr', m); };
   if (miss.length) return show('Tandai dulu barang nomor ' + miss.join(', ') + '.');
   for (var i = 0; i < st.length; i++) if (st[i].ok === false && (!(+st[i].diff >= 1) || !st[i].ket)) return show('Barang nomor ' + (i + 1) + ': isi selisih dan keterangannya.');
   if (!String(cf.name || '').trim()) return show('Tulis nama penerima barang.');
+  if (!opStart('confirm')) return;
   busy(true, 'Mengirim...');
   call('skpConfirm', SKP.token, no, cf.name, cf.note || '', st.map(function (c) { return { ok: c.ok, diff: +c.diff || 0, ket: c.ket || 'Sesuai' }; })).then(function (r) {
-    delete SKP.checks[no]; delete SKP.cf[no];
+    opEnd(); delete SKP.checks[no]; delete SKP.cf[no];
+    // shown as received at once, even if the reload after it fails; the reload brings the server's copy
+    var x = sjOf(no); if (x) { x.status = 'Diterima'; x.gotBy = String(cf.name).trim(); x.got = x.got || nowStamp(); }
+    busy(false); render();
     toast(r && r.issues ? 'Terima kasih. Hasil cek terkirim, ' + r.issues + ' barang ada selisih.' : 'Terima kasih. Penerimaan barang tercatat.', true);
     return loadHome(false);
-  }).then(function () { busy(false); }).catch(function (e) { busy(false); show(e.message); });
+  }).catch(function (e) { opEnd(); busy(false); show(e.message); });
 }
 
 // File tab (5 Nov, Firman): orders as Excel, PDF or photos go to SNAPP as files to download.
@@ -939,21 +1007,22 @@ function filePicked(input) {
   if (bad) err = bad.name + ': hanya file Excel, PDF atau gambar.';
   else if (big) err = big.name + ': lebih dari 10 MB.';
   else if (list.reduce(function (t, f) { return t + f.size; }, 0) > 15728640) err = 'Total file lebih dari 15 MB. Kirim dalam beberapa kali.';
-  SKP.pick = err ? [] : list;
+  SKP.pick = err ? [] : list; SKP.upId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   render();
   if (err) { var el = $('fuErr'); el.textContent = err; el.classList.remove('hide'); }
 }
 function doUpload() {
   var err = $('fuErr');
   if (!SKP.pick.length) { err.textContent = 'Pilih file yang akan dikirim.'; err.classList.remove('hide'); return; }
+  if (!opStart('upload')) return;
   busy(true, 'Mengirim file...');
   Promise.all(SKP.pick.map(function (f) {
     return new Promise(function (ok, no) { var r = new FileReader(); r.onload = function () { ok({ name: f.name, data: String(r.result) }); }; r.onerror = function () { no(new Error(f.name + ': file tidak terbaca.')); }; r.readAsDataURL(f); });
-  })).then(function (files) { return call('skpUpload', SKP.token, files, SKP.fuNote); }).then(function (r) {
-    SKP.pick = []; SKP.fuNote = '';
+  })).then(function (files) { return call('skpUpload', SKP.token, files, SKP.fuNote, SKP.upId); }).then(function (r) {
+    opEnd(); SKP.pick = []; SKP.fuNote = ''; SKP.upId = '';
     toast(r.files.length + ' file terkirim ke SNAPP.', true);
     return loadHome(false);
-  }).then(function () { busy(false); }).catch(function (e) { busy(false); var el = $('fuErr'); if (el) { el.textContent = e.message; el.classList.remove('hide'); } else toast(e.message); });
+  }).then(function () { busy(false); }).catch(function (e) { opEnd(); busy(false); showErr('fuErr', e.message); });
 }
 
 // Invoices: filter chips, then one invoice as a document with its check buttons.
@@ -1007,10 +1076,11 @@ function vInvD(d) {
   return h + '</div>';
 }
 function verifyOk(inv) {
-  if (!confirm('Tandai invoice ' + inv + ' sesuai? Pilihan ini tidak bisa diubah.')) return;
+  if (SKP.op || !confirm('Tandai invoice ' + inv + ' sesuai? Pilihan ini tidak bisa diubah.')) return;
+  if (!opStart('verify')) return;
   busy(true, 'Menyimpan...');
-  call('skpVerify', SKP.token, inv, true, '').then(function () { toast('Terima kasih. Invoice ditandai sesuai.', true); return loadHome(false); })
-    .then(function () { busy(false); }).catch(function (e) { busy(false); toast(e.message); });
+  call('skpVerify', SKP.token, inv, true, '').then(function () { opEnd(); toast('Terima kasih. Invoice ditandai sesuai.', true); return loadHome(false); })
+    .then(function () { busy(false); }).catch(function (e) { opEnd(); busy(false); toast(e.message); });
 }
 function verifyBadSheet(inv) {
   openSheet('<h2>Ada yang tidak sesuai</h2><p class="muted small" style="margin-top:-4px">' + esc(inv) + '. Tulis bagian yang tidak sesuai; SNAPP akan menanggapi di aplikasi ini.</p>' +
@@ -1018,9 +1088,12 @@ function verifyBadSheet(inv) {
     '<div id="vbErr" class="err hide"></div><div class="btnrow"><button class="btn" onclick="closeSheet()">Batal</button><button class="btn cta" onclick="doVerifyBad(\'' + jsq(inv) + '\')">Kirim</button></div>');
 }
 function doVerifyBad(inv) {
+  var note = $('vbNote') ? $('vbNote').value : '';
+  if (!note.trim()) return showErr('vbErr', 'Tulis bagian yang tidak sesuai.');
+  if (!opStart('verify')) return;
   busy(true, 'Mengirim...');
-  call('skpVerify', SKP.token, inv, false, $('vbNote').value).then(function () { closeSheet(); toast('Catatan terkirim ke SNAPP.', true); return loadHome(false); })
-    .then(function () { busy(false); }).catch(function (e) { busy(false); var el = $('vbErr'); el.textContent = e.message; el.classList.remove('hide'); });
+  call('skpVerify', SKP.token, inv, false, note).then(function () { opEnd(); closeSheet(); toast('Catatan terkirim ke SNAPP.', true); return loadHome(false); })
+    .then(function () { busy(false); }).catch(function (e) { opEnd(); busy(false); showErr('vbErr', e.message); });
 }
 
 // The school's own record: PIC, address, its bank account (for cash back), and orders per year.
@@ -1057,9 +1130,10 @@ function profileSheet() {
 function saveProfile() {
   var v = function (id) { return $(id).value; };
   var p = { pic: v('pPic'), role: v('pRole'), phone: v('pPhone'), email: v('pEmail'), address: v('pAddr'), bank: v('pBank'), account: v('pAcc'), holder: v('pHolder') };
+  if (!opStart('profile')) return;
   busy(true, 'Menyimpan...');
-  call('skpProfile', SKP.token, p).then(function (r) { busy(false); SKP.data.profile = r; store('skp_home', JSON.stringify(SKP.data)); closeSheet(); render(); toast('Data sekolah disimpan.', true); })
-    .catch(function (e) { busy(false); var el = $('pErr'); el.textContent = e.message; el.classList.remove('hide'); });
+  call('skpProfile', SKP.token, p).then(function (r) { opEnd(); busy(false); SKP.data.profile = r; store('skp_home', JSON.stringify(SKP.data)); closeSheet(); render(); toast('Data sekolah disimpan.', true); })
+    .catch(function (e) { opEnd(); busy(false); showErr('pErr', e.message); });
 }
 
 // ---------- start ----------
@@ -1092,13 +1166,15 @@ $('lgPin').addEventListener('keydown', function (e) { if (e.key === 'Enter') doL
     e.preventDefault(); launcher.openUrl({ url: a.getAttribute('href') }).catch(function () { toast('Tautan tidak bisa dibuka di HP ini.'); });
   });
   if (app) app.addListener('backButton', function () {
+    if (SKP.op) return; // a send is running
     if (!$('sheet').classList.contains('hide')) { closeSheet(); return; }
     if (SKP.view === 'sj') { go('kirim'); return; }
     if (SKP.view === 'invd') { go('inv'); return; }
     if (SKP.view !== 'home' && SKP.data) { go('home'); return; }
     app.exitApp();
   });
-  if (app) app.addListener('resume', function () { if (SKP.token) loadHome(false); });
+  // A file pick, share, print or permission dialog also resumes the app: refresh at most once a minute.
+  if (app) app.addListener('resume', function () { if (SKP.token && !SKP.op && Date.now() - SKP_LOADED > 60000) loadHome(false); });
 })();
 (function start() {
   SKP.token = store('skp_token') || '';
