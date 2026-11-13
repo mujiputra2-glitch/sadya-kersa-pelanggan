@@ -535,8 +535,8 @@ function shake() { var c = document.querySelector('.lcard'); if (!c) return; c.c
 function logoutLocal(msg) {
   SKP_SESS++; SKP.op = '';
   SKP.token = ''; SKP.data = null; SKP.photos = {}; SKP.view = 'home'; SKP.key = ''; SKP.filter = 'all'; SKP.shown = '';
-  SKP.checks = {}; SKP.cf = {}; SKP.pick = []; SKP.fuNote = ''; SKP.upId = '';
-  store('skp_token', null); store('skp_home', null); store('skp_pop', null);
+  SKP.checks = {}; SKP.cf = {}; SKP.pick = []; SKP.fuNote = ''; SKP.upId = ''; SKP.dataAt = 0;
+  store('skp_token', null); store('skp_home', null); store('skp_pop', null); store('skp_home_at', null);
   busy(false); $('sheet').classList.add('hide'); $('sheet').classList.remove('closing');
   var ln = nativePlugin('LocalNotifications');
   if (ln) ln.cancel({ notifications: [{ id: 81 }] }).catch(function () {});
@@ -576,8 +576,29 @@ function loadHome(spinner) {
     if (!SKP.data) homeError(e.message); else if (spinner || !SKP.op) toast(e.message);
   });
 }
-function homeReady(d, ownsBusy) {
-  SKP.data = d; SKP_LOADED = Date.now(); store('skp_home', JSON.stringify(d));
+// Step 2 (13 Nov): the fast copy on Hostinger (Fast.js pushes it within a minute of a change). Read first,
+// about 0.4 s; Google answers when there is no copy, it is older than 3 minutes, or Hostinger is slow.
+// The copy shows only the last 4 digits of the bank account: the profile form loads the full one first.
+var SKP_FAST = window.SKP_API && window.SKP_API.mode === 'prod' ? 'https://api.sadyakersa.com/api.php' : '';
+function fastGet() {
+  if (!SKP_FAST || !SKP.token || typeof fetch === 'undefined') return Promise.reject(new Error('no fast copy'));
+  var sess = SKP_SESS, ctl = typeof AbortController !== 'undefined' ? new AbortController() : null, timer = setTimeout(function () { if (ctl) ctl.abort(); }, 4000);
+  return fetch(SKP_FAST, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ act: 'get', token: SKP.token, kind: 'home' }), signal: ctl ? ctl.signal : undefined })
+    .then(function (r) { clearTimeout(timer); return r.json(); }, function (e) { clearTimeout(timer); throw e; })
+    .then(function (j) { if (sess !== SKP_SESS) return new Promise(function () {}); if (!j || !j.ok || !j.data || !j.data.d) throw new Error('no fast copy'); return j.data; });
+}
+function fastHome(spinner) {
+  if (spinner) { if (SKP.data) busy(true, 'Memuat data...'); else showSkeleton(); }
+  var seq = ++SKP_HSEQ;
+  return fastGet().then(function (c) {
+    if ((SKP.dataAt || 0) >= c.at || seq < SKP_HDONE) { if (spinner) busy(false); return loadHome(false); }
+    SKP_HDONE = seq;
+    homeReady(c.d, spinner, c.at);
+    if (Date.now() - c.at > 180000) loadHome(false);
+  }, function () { return loadHome(spinner); });
+}
+function homeReady(d, ownsBusy, at) {
+  SKP.data = d; SKP.dataAt = at || Date.now(); SKP_LOADED = Date.now(); store('skp_home', JSON.stringify(d)); store('skp_home_at', String(SKP.dataAt));
   if (ownsBusy) busy(false);
   $('vLogin').classList.add('hide'); $('vApp').classList.remove('hide');
   if (SKP.op) return; // the write reloads and draws when it is done
@@ -1119,6 +1140,7 @@ function vProfil(d) {
   return h;
 }
 function profileSheet() {
+  if (SKP.data.profile && SKP.data.profile.masked) { loadHome(true).then(function () { if (SKP.data && SKP.data.profile && !SKP.data.profile.masked) profileSheet(); }); return; }
   var p = SKP.data.profile || {};
   var f = function (id, label, v, type, ph) { return '<div class="field"><label for="' + id + '">' + label + '</label><input id="' + id + '" type="' + (type || 'text') + '" value="' + esc(v) + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : '') + '></div>'; };
   openSheet('<h2>Ubah data sekolah</h2>' + f('pPic', 'Nama PIC', p.pic) + f('pRole', 'Jabatan PIC', p.role, '', 'Contoh: Bendahara BOS') + f('pPhone', 'No HP PIC', p.phone, 'tel', '0812 3456 7890') +
@@ -1174,15 +1196,16 @@ $('lgPin').addEventListener('keydown', function (e) { if (e.key === 'Enter') doL
     app.exitApp();
   });
   // A file pick, share, print or permission dialog also resumes the app: refresh at most once a minute.
-  if (app) app.addListener('resume', function () { if (SKP.token && !SKP.op && Date.now() - SKP_LOADED > 60000) loadHome(false); });
+  if (app) app.addListener('resume', function () { if (SKP.token && !SKP.op && Date.now() - SKP_LOADED > 60000) fastHome(false); });
 })();
 (function start() {
   SKP.token = store('skp_token') || '';
   if (store('skp_who')) $('lgWho').value = store('skp_who');
   if (!SKP.token) { showLogin(''); return; }
   try { SKP.data = JSON.parse(store('skp_home') || 'null'); } catch (e) { SKP.data = null; }
+  SKP.dataAt = SKP.data ? +(store('skp_home_at') || 0) : 0;
   if (SKP.data) { $('vApp').classList.remove('hide'); render(); }
-  loadHome(!SKP.data);
+  fastHome(!SKP.data);
 })();
 </script>
 </body>
