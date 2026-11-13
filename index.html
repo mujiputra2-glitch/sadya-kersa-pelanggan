@@ -331,15 +331,23 @@
   .ilist td.iv { padding-left: 10px; text-align: right; font-weight: 700; color: var(--ink); }
   .ilist tfoot td { padding: 14px 0 0; border-top: 1.5px dashed #D5DBF0; border-bottom: 0; font-weight: 800; color: var(--ink); }
   .ilist tfoot td.iv { font-size: 18px; color: var(--brand); }
-  .ck { display: inline-flex; width: 26px; height: 26px; border-radius: 50%; align-items: center; justify-content: center; }
-  .ck svg { width: 15px; height: 15px; }
-  .ck.ok { background: #DDF3E4; color: #13642F; } .ck.bad { background: #FDE7E7; color: #B42318; }
+  .ckm { display: inline-flex; width: 26px; height: 26px; border-radius: 50%; align-items: center; justify-content: center; }
+  .ckm svg { width: 15px; height: 15px; }
+  .ckm.ok { background: #DDF3E4; color: #13642F; } .ckm.bad { background: #FDE7E7; color: #B42318; }
   .vstate { display: flex; align-items: flex-start; gap: 12px; }
   .vstate b { display: block; color: var(--ink); font-size: 17px; line-height: 1.3; }
   .vstate .muted { margin-top: 2px; }
   .vstate.green b { color: #13642F; } .vstate.red b { color: #B42318; }
   .paper { background: #fff; border-radius: 8px; box-shadow: 0 1px 2px rgba(22, 23, 79, .08), 0 14px 32px rgba(22, 23, 79, .12); }
   .paper .doc { margin: 0; border: 0; box-shadow: none; }
+  .dochead .doctl { text-align: left; }
+  .dochead .doctl b { display: block; font-size: 18px; letter-spacing: 1px; color: var(--brand); }
+  .dochead .doctl span { font-size: 13.5px; font-weight: 700; color: var(--muted); }
+  .dochead .doccomp { text-align: right; }
+  .dochead .doccomp img { display: block; max-height: 48px; max-width: 170px; margin-left: auto; }
+  .dochead .doccomp span { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-top: 2px; }
+  .dochead .doccomp b { display: block; font-size: 15px; letter-spacing: 0; color: var(--ink); }
+  .docfoot { margin-top: 16px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
   .isum { display: flex; align-items: center; gap: 14px; }
   .isum .t { min-width: 0; }
   .isum small { display: block; font-size: 14px; color: var(--muted); }
@@ -720,9 +728,23 @@ function docBtns(fn, key, kind) {
     '<button class="btn" onclick="docRun(\'pdf\',\'' + fn + '\',\'' + k + '\')">' + SKP_ICON.download + 'Unduh PDF</button></div>' +
     '<button class="btn quiet" onclick="docSheet(\'' + kind + '\',\'' + k + '\')">' + SKP_ICON.doc + 'Lihat tampilan dokumen</button>';
 }
+// 13 Nov (Firman): the documents carry the company of the order (column CV) top right with its logo,
+// sign with it as sender, and end with the print date, time and company, as the PDF does.
+function docComp(d, invNo) {
+  var c = d.companies || {}, i = invOf(invNo), k = i && i.cv ? String(i.cv).toUpperCase() : 'SK';
+  return c[k] || c.SK || { name: '', logo: '' };
+}
+function docHead(title, sub, co) {
+  return '<div class="dochead"><div class="doctl"><b>' + esc(title) + '</b><span>' + esc(sub) + '</span></div><div class="doccomp">' +
+    (co.logo ? '<img src="' + esc(co.logo) + '" alt=""><span>' + esc(co.name) + '</span>' : '<b>' + esc(co.name || '') + '</b>') + '</div></div>';
+}
+function docFoot(co) {
+  var n = new Date(), p = function (v) { return ('0' + v).slice(-2); };
+  return '<div class="docfoot">Dicetak ' + n.getDate() + ' ' + SKP_BULAN_PANJANG[n.getMonth()] + ' ' + n.getFullYear() + ', ' + p(n.getHours()) + ':' + p(n.getMinutes()) + ' WIB' + (co.name ? ' · ' + esc(co.name) : '') + '</div>';
+}
 function sjDoc(s, d) {
-  var p = d.profile || {}, inv = invOf(s.inv);
-  return '<div class="doc"><div class="dochead">' + logoHtml() + '<div><b>SURAT JALAN</b><span>' + esc(inv && /siplah/i.test(inv.mkt || '') ? 'SIPLah' : s.no) + '</span></div></div>' +
+  var p = d.profile || {}, inv = invOf(s.inv), co = docComp(d, s.inv);
+  return '<div class="doc">' + docHead('SURAT JALAN', s.no + (inv && /siplah/i.test(inv.mkt || '') ? ' · SIPLah' : ''), co) +
     '<div class="docschool">' + esc(d.me.name) + '</div>' +
     '<dl class="kv"><dt>No.</dt><dd>' + esc(s.inv) + '</dd><dt>Tanggal</dt><dd>' + esc(tglPanjang(s.date)) + '</dd><dt>PIC</dt><dd>' + esc(p.pic || '-') + '</dd>' +
     '<dt>No. Telp</dt><dd>' + esc(p.phone || '-') + '</dd><dt>Alamat</dt><dd style="white-space:pre-wrap">' + esc(s.address) + '</dd></dl>' +
@@ -732,16 +754,19 @@ function sjDoc(s, d) {
       return '<tr><td>' + (i + 1) + '</td><td>' + esc(l.item) + '</td><td class="n">' + esc(qty(l.qty)) + ' ' + esc(l.unit) + '</td><td class="ck">' +
         (c ? (c.ok ? '<b class="okv" aria-label="Sesuai">v</b>' : '<b class="badx" aria-label="Tidak sesuai">x</b><br><span class="small">' + esc(c.ket) + ' ' + esc(c.diff) + '</span>') : '-') + '</td></tr>';
     }).join('') + '</tbody></table>' + (s.note ? '<p class="small" style="white-space:pre-wrap">' + esc(s.note) + '</p>' : '') +
-    '<div class="sign"><div>Pengirim<span>' + esc(s.sent ? 'CV Sadya Kersa' : '') + '</span></div><div>Penerima<span>' + esc(s.gotBy || '') + (s.got ? '<br>' + esc(stamp(s.got)) : '') + '</span></div></div></div>';
+    '<div class="sign"><div>Pengirim<span>' + esc(co.name || '') + '</span></div><div>Penerima<span>' + esc(s.gotBy || '') + (s.got ? '<br>' + esc(stamp(s.got)) : '') + '</span></div></div>' +
+    docFoot(co) + '</div>';
 }
 function invDoc(i, d) {
-  return '<div class="doc"><div class="dochead">' + logoHtml() + '<div><b>INVOICE</b><span>' + esc(i.inv) + '</span></div></div>' +
+  var co = docComp(d, i.inv);
+  return '<div class="doc">' + docHead('INVOICE', (i.inv || '-') + (i.mkt && i.mkt !== '-' ? ' · ' + i.mkt : ''), co) +
     '<dl class="kv"><dt>Tanggal</dt><dd>' + esc(tglPanjang(i.date)) + '</dd><dt>Kepada</dt><dd>' + esc(d.me.name) + '</dd>' +
-    (i.received ? '<dt>Barang diterima</dt><dd>' + esc(tglPanjang(i.received)) + '</dd>' + (i.status !== 'Lunas' && i.due ? '<dt>Jatuh tempo</dt><dd>' + esc(tglPanjang(i.due)) + ' (30 hari setelah barang diterima)</dd>' : '') : '') + (i.mkt && i.mkt !== '-' ? '<dt>Melalui</dt><dd>' + esc(i.mkt) + '</dd>' : '') + '</dl>' +
+    (i.received ? '<dt>Barang diterima</dt><dd>' + esc(tglPanjang(i.received)) + '</dd>' + (i.status !== 'Lunas' && i.due ? '<dt>Jatuh tempo</dt><dd>' + esc(tglPanjang(i.due)) + ' (30 hari setelah barang diterima)</dd>' : '') : '') + '</dl>' +
     '<table class="dtab"><thead><tr><th>Barang</th><th class="n">Jumlah</th><th class="n v">Nilai (Rp)</th></tr></thead><tbody>' + i.lines.map(function (l) {
       return '<tr><td>' + esc(l[0] || 'Barang') + '</td><td class="n">' + esc(qty(l[1])) + ' ' + esc(l[2]) + '</td><td class="n v">' + esc(num(l[3])) + '</td></tr>';
     }).join('') + '</tbody><tfoot><tr><td colspan="2">Total</td><td class="n v">' + esc(num(i.total)) + '</td></tr></tfoot></table>' +
-    (i.fresh ? '<p class="muted small">Order baru disetujui; rincian pajak mengikuti dokumen SIPLah.</p>' : '') + '</div>';
+    '<p class="small" style="margin:12px 0 0"><b>Status:</b> ' + (i.status === 'Lunas' ? 'Lunas' + (i.paidDate ? ' (' + esc(tglPanjang(i.paidDate)) + ')' : '') : 'Belum lunas') + '</p>' +
+    (i.fresh ? '<p class="muted small">Order baru disetujui; rincian pajak mengikuti dokumen SIPLah.</p>' : '') + docFoot(co) + '</div>';
 }
 function docSheet(kind, key) {
   var d = SKP.data, x = kind === 'sj' ? sjOf(key) : invOf(key), fn = kind === 'sj' ? 'skpSjPdf' : 'skpInvPdf', k = jsq(key);
@@ -769,7 +794,7 @@ function vSj(d) {
   h += '<div class="caption">Barang, ' + s.lines.length + ' jenis</div><div class="card"><table class="ilist" aria-label="Barang di surat jalan"><tbody>' + s.lines.map(function (l, i) {
     var c = s.checks && s.checks[i];
     return '<tr><td class="ino"><span>' + (i + 1) + '</span></td><td><b>' + esc(l.item) + '</b><span class="q">' + esc(qty(l.qty)) + ' ' + esc(l.unit) + (c && !c.ok ? ' · ' + esc(c.ket) + ' ' + esc(c.diff) : '') + '</span></td>' +
-      '<td class="iv">' + (c ? (c.ok ? '<span class="ck ok" role="img" aria-label="Sesuai">' + SKP_ICON.check + '</span>' : '<span class="ck bad" role="img" aria-label="Tidak sesuai">' + SKP_ICON.x + '</span>') : '') + '</td></tr>';
+      '<td class="iv">' + (c ? (c.ok ? '<span class="ckm ok" role="img" aria-label="Sesuai">' + SKP_ICON.check + '</span>' : '<span class="ckm bad" role="img" aria-label="Tidak sesuai">' + SKP_ICON.x + '</span>') : '') + '</td></tr>';
   }).join('') + '</tbody></table>' + (s.note ? '<p class="small" style="white-space:pre-wrap;margin:10px 0 0">' + esc(s.note) + '</p>' : '') + '</div>';
   if (s.status !== 'Disiapkan') {
     h += '<div class="caption">Bukti kirim</div><div class="card"><dl class="kv"><dt>Dikirim</dt><dd>' + esc(stamp(s.sent)) + '</dd>' + (s.other ? '<dt>Bukti lain</dt><dd>' + esc(s.other) + '</dd>' : '') + '</dl>';
@@ -958,7 +983,9 @@ function vInvD(d) {
   h += docBtns('skpInvPdf', i.inv, 'inv');
   h += '<div class="caption">Rincian</div><div class="card"><dl class="kv rows"><dt>No. invoice</dt><dd>' + esc(i.inv) + '</dd><dt>Tanggal</dt><dd>' + esc(tglPanjang(i.date)) + '</dd><dt>Kepada</dt><dd>' + esc(d.me.name) + '</dd>' +
     (i.received ? '<dt>Barang diterima</dt><dd>' + esc(tglPanjang(i.received)) + '</dd>' : '') + (i.status !== 'Lunas' && i.due ? '<dt>Jatuh tempo</dt><dd>' + esc(tglPanjang(i.due)) + '</dd>' : '') +
-    (i.mkt && i.mkt !== '-' ? '<dt>Melalui</dt><dd>' + esc(i.mkt) + '</dd>' : '') + '</dl></div>';
+    (i.mkt && i.mkt !== '-' ? '<dt>Melalui</dt><dd>' + esc(i.mkt) + '</dd>' : '') +
+    '<dt>Status bayar</dt><dd>' + (i.status === 'Lunas' ? 'Lunas' + (i.paidDate ? ' ' + esc(tgl(i.paidDate)) : '') : 'Belum lunas') + '</dd></dl>' +
+    '<div class="muted small" style="margin-top:8px">Status lunas diperbarui admin SNAPP setelah pembayaran diterima.</div></div>';
   h += '<div class="caption">Barang, ' + i.lines.length + ' jenis</div><div class="card"><table class="ilist" aria-label="Barang di invoice"><tbody>' + i.lines.map(function (l, n) {
     return '<tr><td class="ino"><span>' + (n + 1) + '</span></td><td><b>' + esc(l[0] || 'Barang') + '</b><span class="q">' + esc(qty(l[1])) + ' ' + esc(l[2]) + '</span></td><td class="iv">' + esc(num(l[3])) + '</td></tr>';
   }).join('') + '</tbody><tfoot><tr><td colspan="2">Total</td><td class="iv">' + esc(rp(i.total)) + '</td></tr></tfoot></table>' +
