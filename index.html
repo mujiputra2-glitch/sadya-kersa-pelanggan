@@ -526,7 +526,8 @@ function doLogin() {
   call('skpLogin', who, pin, true).then(function (r) {
     clearTimeout(slow); opEnd(); SKP_SESS++;
     SKP.token = r.token; store('skp_token', r.token); store('skp_who', who); $('lgPin').value = ''; $('lgPin').blur();
-    if (r.home) { homeReady(r.home, true); return; }
+    // 17 Nov: a home the server had ready (homeAt) shows at once; older than 3 minutes, Google refreshes it quietly
+    if (r.home) { homeReady(r.home, true, r.homeAt); if (r.homeAt && Date.now() - r.homeAt > 180000) loadHome(false); return; }
     return loadHome(true);
   }).catch(function (e) { clearTimeout(slow); opEnd(); busy(false); showLogin(e.message); shake(); });
 }
