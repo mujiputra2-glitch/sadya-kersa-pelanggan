@@ -8,7 +8,7 @@
 <meta name="robots" content="noindex">
 <link rel="icon" href="icon.png">
 <link rel="apple-touch-icon" href="icon.png">
-<script>window.SKP_API = {"url":"https://script.google.com/macros/s/AKfycbwzm6vI7CH0DHvUhK8n6pCoSvNnOQgrvN453tYC5upts-OmrElAP5eH-1k0rrLAGQy5/exec","version":"1.1.5","mode":"prod","privacy":"https://pelanggan.sadyakersa.com/privasi/"};</script>
+<script>window.SKP_API = {"url":"https://script.google.com/macros/s/AKfycbwzm6vI7CH0DHvUhK8n6pCoSvNnOQgrvN453tYC5upts-OmrElAP5eH-1k0rrLAGQy5/exec","version":"1.1.7","mode":"prod","privacy":"https://pelanggan.sadyakersa.com/privasi/"};</script>
 <meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
@@ -654,7 +654,8 @@ function remindNotify(list) {
       if (!list.length) return;
       var at = new Date(); at.setHours(8, 0, 0, 0);
       if (at <= new Date()) at.setDate(at.getDate() + 1);
-      return ln.schedule({ notifications: [{ id: 81, title: 'SNAPP: pengingat', body: list.map(function (x) { return x[0]; }).join('. ') + '.', schedule: { at: at } }] });
+      // isExactNotification false (17 Nov): otherwise the plugin opens Android's "Alarms and reminders" screen each time
+      return ln.schedule({ notifications: [{ id: 81, title: 'SNAPP: pengingat', body: list.map(function (x) { return x[0]; }).join('. ') + '.', schedule: { at: at }, isExactNotification: false }] });
     });
   }).catch(function () {});
 }
