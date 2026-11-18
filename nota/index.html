@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src https://script.google.com https://script.googleusercontent.com; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#2728C0">
+<title>Nota Sadya Kersa</title>
+<script>window.SKN_API = {"url":"https://script.google.com/macros/s/AKfycbwzm6vI7CH0DHvUhK8n6pCoSvNnOQgrvN453tYC5upts-OmrElAP5eH-1k0rrLAGQy5/exec","mode":"prod"};</script>
+<meta property="og:title" content="Nota pesanan Sadya Kersa">
+<meta property="og:description" content="Rincian invoice sekolah, status pengiriman dan pembayaran.">
+<meta property="og:image" content="https://pelanggan.sadyakersa.com/icon.png">
+<link rel="icon" href="../icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<!--
+  e-nota for the Kepala Sekolah (18 Nov, Firman and team, like a shop's e-receipt). One page per invoice:
+  ?k=<code> from the WhatsApp link the Admin sends (eSKalasi or the dashboard). Data from the Sales API
+  (PelangganApi.js skpNota, no login); stars and review go back with skpNotaRate. &lihat=1 = the admin's own
+  look, not counted as an open. The band is SNAPP's (blue with the sky and orange corners); the nota is a
+  paper slip with a torn bottom edge. No block comments in the style or script (same rule as Pelanggan.html). Built by tools/build_nota.node.js (API link, CSP), published at
+  https://pelanggan.sadyakersa.com/nota/ by tools/publish_web.node.js.
+-->
+<style>
+  :root {
+    --ink: #16174F; --body: #2E3048; --muted: #5E6079; --brand: #2728C0; --brand2: #1E1F9C; --orange: #FB4305; --cta: #D93800; --sky: #3152BF;
+    --tint: #ECECFB; --line: #DCDDEE; --bg: #EEEFF8; --paper: #FFFFFF; --green: #15803D; --greenbg: #E6F5EB; --late: #B42318; --latebg: #FDEDEC;
+    --duebg: #FFF0E6; --e-out: cubic-bezier(.23, 1, .32, 1);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: var(--bg); }
+  body { font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 16px; line-height: 1.5; color: var(--body); min-height: 100vh; }
+  button, textarea { font: inherit; color: inherit; }
+  .hide { display: none !important; }
+  :focus-visible { outline: 3px solid var(--orange); outline-offset: 2px; }
+
+  .band { background: linear-gradient(135deg, #1B1C93 0%, #2728C0 72%); color: #fff; padding: 18px 16px 64px; position: relative; overflow: hidden; }
+  .band::before { content: ''; position: absolute; left: 0; top: 0; width: 26%; height: 64%; background: var(--sky); clip-path: polygon(0 0, 100% 0, 0 100%); }
+  .band::after { content: ''; position: absolute; right: 0; bottom: 0; width: 44%; height: 100%; background: var(--orange); clip-path: polygon(100% 22%, 100% 100%, 18% 100%); }
+  .band .in { position: relative; z-index: 1; max-width: 520px; margin: 0 auto; display: flex; align-items: center; gap: 12px; }
+  .mark { flex: none; width: 42px; height: 42px; border-radius: 12px; overflow: hidden; box-shadow: 0 0 0 2px rgba(255, 255, 255, .85), 0 4px 12px rgba(0, 0, 0, .22); }
+  .mark svg { display: block; width: 100%; height: 100%; }
+  .band b { display: block; font-size: 19px; font-weight: 800; line-height: 1.2; }
+  .band span.s { display: block; font-size: 13.5px; color: #D3D4F8; }
+
+  .wrap { max-width: 520px; margin: -48px auto 0; padding: 0 16px 40px; position: relative; z-index: 2; }
+
+  .paper { background: var(--paper); border-radius: 20px 20px 0 0; padding: 20px 18px 22px; position: relative; filter: drop-shadow(0 10px 24px rgba(22, 23, 79, .13)) drop-shadow(0 1px 2px rgba(22, 23, 79, .08));
+    animation: rise .5s var(--e-out) both; margin-bottom: 26px; }
+  .paper::after { content: ''; position: absolute; left: 0; right: 0; bottom: -11px; height: 12px;
+    background: radial-gradient(circle at 9px 0, var(--paper) 9px, transparent 9.6px) 0 0 / 18px 12px repeat-x; }
+  @keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+  .co { display: flex; align-items: center; gap: 12px; padding-bottom: 14px; border-bottom: 1px dashed var(--line); }
+  .co img { flex: none; max-width: 96px; max-height: 48px; object-fit: contain; }
+  .co .ini { flex: none; width: 46px; height: 46px; border-radius: 12px; background: var(--tint); color: var(--brand); display: grid; place-items: center; font-weight: 800; font-size: 17px; }
+  .co b { display: block; color: var(--ink); font-size: 16.5px; line-height: 1.3; }
+  .co span { display: block; font-size: 13px; color: var(--muted); }
+  .lbl { display: block; font-size: 12.5px; font-weight: 700; color: var(--muted); letter-spacing: .2px; }
+  .to { padding: 14px 0 4px; }
+  .to b { display: block; color: var(--ink); font-size: 18px; line-height: 1.3; font-weight: 800; }
+  .to span.k { display: block; font-size: 14.5px; color: var(--body); margin-top: 2px; }
+  .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .meta b { display: block; color: var(--ink); font-size: 15px; overflow-wrap: anywhere; }
+  .via { display: inline-block; margin: 12px 0 0; font-size: 13px; font-weight: 700; color: var(--brand2); background: var(--tint); border-radius: 8px; padding: 3px 9px; }
+
+  .sum { margin: 16px -18px 0; padding: 16px 18px; background: #F7F7FC; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .sum .row { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .big { display: block; font-size: 30px; line-height: 1.1; font-weight: 800; color: var(--ink); letter-spacing: -.5px; font-variant-numeric: tabular-nums; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 800; border-radius: 999px; padding: 6px 12px; }
+  .pill svg { width: 16px; height: 16px; flex: none; }
+  .pill.ok { background: var(--greenbg); color: var(--green); }
+  .pill.due { background: var(--duebg); color: var(--cta); }
+  .pill.late { background: var(--latebg); color: var(--late); }
+  .payline { margin: 10px 0 0; font-size: 14.5px; color: var(--body); }
+  .payline.late { color: var(--late); font-weight: 700; }
+
+  h2 { font-size: 16px; color: var(--ink); margin: 20px 0 8px; font-weight: 800; }
+  .items { list-style: none; margin: 0; padding: 0; }
+  .items li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid #EEEFF6; }
+  .items li:last-child { border-bottom: 0; }
+  .items .n b { display: block; color: var(--ink); font-weight: 600; line-height: 1.35; }
+  .items .n span { font-size: 13.5px; color: var(--muted); }
+  .items .a { flex: none; text-align: right; font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tot { display: flex; justify-content: space-between; align-items: baseline; padding-top: 12px; margin-top: 4px; border-top: 2px solid var(--ink); }
+  .tot span { font-weight: 800; color: var(--ink); }
+  .tot b { font-size: 19px; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+  .card { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 16px 18px; margin-top: 14px; animation: rise .5s var(--e-out) both; }
+  .card.s2 { animation-delay: .08s; } .card.s3 { animation-delay: .16s; }
+  .card h2 { margin-top: 0; }
+  .now { margin: 0 0 12px; font-size: 15px; color: var(--body); }
+  .steps { list-style: none; margin: 0; padding: 0; }
+  .steps li { display: grid; grid-template-columns: 28px 1fr; gap: 12px; position: relative; padding-bottom: 16px; }
+  .steps li:last-child { padding-bottom: 0; }
+  .steps li:not(:last-child)::before { content: ''; position: absolute; left: 13px; top: 28px; bottom: 0; width: 2px; background: var(--line); }
+  .steps li.done:not(:last-child)::before { background: var(--brand); }
+  .dot { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line); background: #fff; display: grid; place-items: center; }
+  .dot svg { width: 15px; height: 15px; }
+  .done .dot { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .cur .dot { border-color: var(--brand); box-shadow: 0 0 0 4px var(--tint); }
+  .cur .dot::after { content: ''; width: 10px; height: 10px; border-radius: 50%; background: var(--brand); }
+  .warn .dot { border-color: var(--cta); box-shadow: 0 0 0 4px var(--duebg); }
+  .warn .dot::after { background: var(--cta); }
+  .steps b { display: block; color: var(--ink); line-height: 1.3; padding-top: 3px; }
+  .todo b { color: var(--muted); font-weight: 600; }
+  .steps span { display: block; font-size: 13.5px; color: var(--muted); }
+  .steps .wtxt { color: var(--cta); font-weight: 600; }
+  .sjs { margin: 14px 0 0; padding: 10px 12px; background: #F7F7FC; border-radius: 12px; font-size: 13.5px; }
+  .sjs div { display: flex; justify-content: space-between; gap: 10px; padding: 3px 0; }
+  .sjs b { color: var(--ink); font-weight: 700; white-space: nowrap; }
+  .sjs div span { text-align: right; }
+
+  .stars { display: flex; gap: 6px; margin-top: 4px; }
+  .star { width: 48px; height: 48px; border: 0; background: transparent; padding: 4px; border-radius: 12px; cursor: pointer; color: #C9CBE0; transition: transform .16s var(--e-out), color .16s; }
+  .star svg { width: 100%; height: 100%; display: block; }
+  .star.on { color: #F59E0B; }
+  .star:active { transform: scale(.9); }
+  @media (hover: hover) { .star:hover { transform: scale(1.08); } }
+  .slbl { min-height: 22px; margin: 4px 0 0; font-size: 14px; font-weight: 700; color: var(--ink); }
+  textarea { width: 100%; min-height: 92px; margin-top: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; resize: vertical; background: #fff; font-size: 15.5px; }
+  .count { text-align: right; font-size: 12.5px; color: var(--muted); }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; border-radius: 14px; border: 1px solid var(--line); background: #fff; padding: 0 16px; font-weight: 700; color: var(--ink); cursor: pointer; text-decoration: none; }
+  .btn.cta { background: var(--cta); border-color: var(--cta); color: #fff; }
+  .btn.block { width: 100%; margin-top: 12px; }
+  .btn[disabled] { opacity: .55; cursor: default; }
+  .btn svg { width: 20px; height: 20px; flex: none; }
+  .msg { margin: 10px 0 0; font-size: 14px; }
+  .msg.err { color: var(--late); font-weight: 600; }
+  .given { display: flex; gap: 3px; color: #F59E0B; margin-top: 2px; }
+  .given svg { width: 24px; height: 24px; }
+  .given .off { color: #C9CBE0; }
+  .quote { margin: 10px 0 0; padding: 10px 12px; border-radius: 12px; background: #F7F7FC; white-space: pre-wrap; font-size: 15px; }
+  .muted { color: var(--muted); }
+
+  .foot { margin-top: 18px; text-align: center; font-size: 13.5px; color: var(--muted); }
+  .qr { display: inline-block; background: #fff; border-radius: 14px; padding: 10px; border: 1px solid var(--line); }
+  .qr svg { display: block; width: 116px; height: 116px; }
+  .acts { display: flex; gap: 10px; justify-content: center; margin: 14px 0; flex-wrap: wrap; }
+  .acts .btn { flex: 1 1 40%; max-width: 220px; }
+  .foot a { color: var(--brand); font-weight: 700; }
+
+  .state { text-align: center; padding: 34px 20px 30px; }
+  .state b { display: block; color: var(--ink); font-size: 18px; margin-bottom: 6px; }
+  .state p { margin: 0 0 14px; }
+  .shim { height: 14px; border-radius: 7px; background: linear-gradient(90deg, #EEEFF6 0%, #F7F7FC 50%, #EEEFF6 100%) 0 0 / 200% 100%; animation: shim 1.2s linear infinite; margin: 12px 0; }
+  @keyframes shim { to { background-position: -200% 0; } }
+
+  @media (prefers-reduced-motion: reduce) { .paper, .card { animation: none; } .shim { animation: none; } .star { transition: none; } }
+  @media print {
+    body { background: #fff; }
+    .band, .rate, .acts, .noprint { display: none !important; }
+    .wrap { margin: 0 auto; }
+    .paper { filter: none; border: 1px solid #ccc; border-radius: 0; }
+    .paper::after { display: none; }
+    .card { border-color: #ccc; break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<header class="band">
+  <div class="in">
+    <span class="mark"><svg viewBox="-26 -28 156 156" aria-hidden="true"><rect x="-26" y="-28" width="156" height="156" rx="34" fill="#2728c0"/><path d="M104,12 H31 A19,19 0 0 0 31,50 H54" fill="none" stroke="#ffffff" stroke-width="24" stroke-linejoin="round"/><path d="M52,50 H73 A19,19 0 0 1 73,88 H0" fill="none" stroke="#fb4305" stroke-width="24" stroke-linejoin="round"/></svg></span>
+    <div><b>Nota Pesanan</b><span class="s">Sadya Kersa untuk sekolah</span></div>
+  </div>
+</header>
+<main class="wrap" id="app" aria-live="polite">
+  <section class="paper" id="loading">
+    <p class="muted" style="margin:0 0 8px">Memuat nota...</p>
+    <div class="shim" style="width:60%"></div><div class="shim"></div><div class="shim" style="width:80%"></div><div class="shim" style="width:45%"></div>
+  </section>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" defer></script>
+<script>
+var CFG = window.SKN_API || {};
+var Q = new URLSearchParams(location.search), CODE = String(Q.get('k') || '').trim().toLowerCase(), VIEW = Q.get('lihat') === '1';
+var BLN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+var STAR_TXT = ['', 'Kurang', 'Cukup', 'Baik', 'Sangat baik', 'Luar biasa'];
+var ICON = {
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.5"/></svg>',
+  star: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.8l2.8 5.8 6.3.9-4.6 4.4 1.1 6.3L12 17.2l-5.6 3 1.1-6.3L2.9 9.5l6.3-.9z"/></svg>',
+  print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6M7 17H4v-7a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v7h-3"/><path d="M7 14h10v7H7z"/></svg>',
+  link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>'
+};
+var N = { d: null, stars: 0, edit: false, busy: false };
+
+function $(id) { return document.getElementById(id); }
+function esc(v) { return String(v === null || v === undefined ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function tgl(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || '')); return m ? (+m[3]) + ' ' + BLN[+m[2] - 1] + ' ' + m[1] : ''; }
+function rp(n) { return 'Rp ' + String(Math.round(+n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+function qty(n) { return String(n).replace('.', ','); }
+function link() { return location.origin + location.pathname + '?k=' + encodeURIComponent(CODE); }
+
+function call(fn, args) {
+  if (!CFG.url) return Promise.reject(new Error('Halaman nota belum terhubung ke server.'));
+  var ctl = typeof AbortController !== 'undefined' ? new AbortController() : null, timer = setTimeout(function () { if (ctl) ctl.abort(); }, 45000);
+  return fetch(CFG.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow',
+    body: JSON.stringify({ app: 'pelanggan', fn: fn, args: args }), signal: ctl ? ctl.signal : undefined })
+    .then(function (r) { clearTimeout(timer); if (!r.ok) throw new Error('Koneksi bermasalah (HTTP ' + r.status + '). Coba lagi.'); return r.text(); },
+      function (e) { clearTimeout(timer); throw new Error(e && e.name === 'AbortError' ? 'Server lambat menjawab. Coba lagi sebentar lagi.' : 'Tidak ada koneksi internet. Coba lagi.'); })
+    .then(function (txt) {
+      var j; try { j = JSON.parse(txt); } catch (e) { throw new Error('Jawaban server tidak terbaca. Coba lagi.'); }
+      if (j && j.ok) return j.data;
+      var err = new Error(j && j.error ? j.error : 'Server tidak menjawab.');
+      err.code = j && j.error;
+      throw err;
+    });
+}
+
+function state(title, text, retry) {
+  $('app').innerHTML = '<section class="paper state"><b>' + esc(title) + '</b><p>' + esc(text) + '</p>' +
+    (retry ? '<button class="btn cta" type="button" id="retry">Coba lagi</button>' : '') + '</section>';
+  if (retry) $('retry').addEventListener('click', load);
+}
+
+function load() {
+  if (!/^n[a-f0-9]{32}$/.test(CODE)) { state('Link nota ini tidak dikenal', 'Buka link lengkap dari pesan WhatsApp, atau minta link baru ke admin Sadya Kersa.'); return; }
+  $('app').innerHTML = '<section class="paper"><p class="muted" style="margin:0 0 8px">Memuat nota...</p><div class="shim" style="width:60%"></div><div class="shim"></div><div class="shim" style="width:80%"></div></section>';
+  call('skpNota', [CODE, VIEW]).then(function (d) { N.d = d; render(); }, function (e) {
+    if (e.code === 'NOTA_TIDAK_ADA') state('Link nota ini tidak dikenal', 'Buka link lengkap dari pesan WhatsApp, atau minta link baru ke admin Sadya Kersa.');
+    else state('Nota belum bisa dimuat', e.message, true);
+  });
+}
+
+function paperHtml(d) {
+  var co = d.company || {}, ini = String(co.name || 'SK').replace(/^(CV|PT|UD)\.?\s+/i, '').split(/\s+/).map(function (w) { return w.charAt(0); }).join('').slice(0, 2).toUpperCase();
+  var pill = d.paid ? '<span class="pill ok">' + ICON.check + 'Lunas</span>' : d.late ? '<span class="pill late">' + ICON.alert + 'Lewat jatuh tempo</span>' : '<span class="pill due">' + ICON.clock + 'Belum lunas</span>';
+  var pay = d.paid ? (d.paidDate ? 'Dibayar ' + tgl(d.paidDate) + '.' : 'Sudah dibayar lunas.') : d.due ? (d.late ? 'Jatuh tempo ' + tgl(d.due) + ' sudah lewat.' : 'Jatuh tempo ' + tgl(d.due) + '.')
+    : 'Jatuh tempo 30 hari setelah semua barang diterima dan invoice dikonfirmasi sekolah.';
+  var items = (d.lines || []).map(function (l) {
+    return '<li><div class="n"><b>' + esc(l.item) + '</b><span>' + esc(qty(l.qty) + ' ' + l.unit) + '</span></div><div class="a">' + rp(l.amount) + '</div></li>';
+  }).join('');
+  return '<section class="paper">' +
+    '<div class="co">' + (co.logo ? '<img src="' + esc(co.logo) + '" alt="Logo ' + esc(co.name) + '">' : '<span class="ini" aria-hidden="true">' + esc(ini) + '</span>') +
+      '<div><b>' + esc(co.name) + '</b><span>Penjual</span></div></div>' +
+    '<div class="to"><span class="lbl">Nota untuk</span><b>' + esc(d.school) + '</b>' + (d.kepsek ? '<span class="k">Kepala Sekolah: ' + esc(d.kepsek) + '</span>' : '') + '</div>' +
+    '<div class="meta"><div><span class="lbl">No. Invoice</span><b>' + esc(d.inv) + '</b></div><div><span class="lbl">Tanggal pesan</span><b>' + esc(tgl(d.date)) + '</b></div></div>' +
+    (d.mkt ? '<span class="via">Dipesan lewat SIPLah</span>' : '') +
+    '<div class="sum"><span class="lbl">Total tagihan</span><div class="row"><b class="big">' + rp(d.total) + '</b>' + pill + '</div>' +
+      '<p class="payline' + (d.late && !d.paid ? ' late' : '') + '">' + esc(pay) + '</p></div>' +
+    '<h2>Rincian barang</h2><ul class="items">' + items + '</ul>' +
+    '<div class="tot"><span>Total</span><b>' + rp(d.total) + '</b></div>' +
+    '</section>';
+}
+
+function stepsHtml(d) {
+  var first = -1;
+  (d.steps || []).forEach(function (s, i) { if (first < 0 && !s.done) first = i; });
+  var li = (d.steps || []).map(function (s, i) {
+    var cls = s.done ? 'done' : i === first ? (s.retur ? 'cur warn' : 'cur') : 'todo';
+    var sub = s.retur ? '<span class="wtxt">Ada barang kurang atau bermasalah. Kiriman pengganti sedang diurus.</span>'
+      : s.done ? '<span>' + esc(s.at ? tgl(s.at) : 'Selesai') + '</span>' : i === first ? '<span>Sedang berjalan</span>' : '<span>Belum</span>';
+    return '<li class="' + cls + '"><span class="dot">' + (s.done ? ICON.check : '') + '</span><div><b>' + esc(s.t) + '</b>' + sub + '</div></li>';
+  }).join('');
+  var sjs = (d.sjs || []).map(function (s) {
+    var when = s.status === 'Diterima' ? tgl(s.got) : s.status === 'Dikirim' ? tgl(s.sent) : '';
+    return '<div><b>' + esc(s.no) + '</b><span>' + esc(s.status + (when ? ' ' + when : '')) + '</span></div>';
+  }).join('');
+  return '<section class="card s2"><h2>Status pesanan</h2>' + (d.status && d.status.text && d.status.code !== 'lunas' ? '<p class="now">' + esc(d.status.text) + '.</p>' : '') +
+    '<ol class="steps">' + li + '</ol>' + (sjs ? '<div class="sjs"><span class="lbl" style="margin-bottom:2px">Surat jalan</span>' + sjs + '</div>' : '') + '</section>';
+}
+
+function rateHtml(d) {
+  var can = d.paid || (d.steps && d.steps[2] && d.steps[2].done);
+  var head = '<section class="card s3 rate" id="rate"><h2>Ulasan untuk Sadya Kersa</h2>';
+  if (!can) return head + '<p class="muted" style="margin:0">Setelah barang diterima, Bapak/Ibu bisa memberi bintang dan ulasan di sini.</p></section>';
+  if (d.rating && !N.edit) {
+    var st = '';
+    for (var i = 1; i <= 5; i++) st += '<span class="' + (i <= d.rating.stars ? '' : 'off') + '">' + ICON.star + '</span>';
+    return head + '<p style="margin:0 0 4px">Terima kasih, ulasan Bapak/Ibu sudah kami terima.</p><div class="given" role="img" aria-label="' + d.rating.stars + ' dari 5 bintang">' + st + '</div>' +
+      (d.rating.comment ? '<p class="quote">' + esc(d.rating.comment) + '</p>' : '') +
+      '<button class="btn block" type="button" id="rEdit">Ubah ulasan</button></section>';
+  }
+  var b = '';
+  for (var j = 1; j <= 5; j++) b += '<button class="star' + (j <= N.stars ? ' on' : '') + '" type="button" data-s="' + j + '" aria-label="' + j + ' bintang, ' + STAR_TXT[j] + '" aria-pressed="' + (j === N.stars) + '">' + ICON.star + '</button>';
+  return head + '<p style="margin:0">Bagaimana pesanan ini menurut Bapak/Ibu?</p>' +
+    '<div class="stars" role="group" aria-label="Pilih bintang">' + b + '</div><p class="slbl" id="sLbl">' + esc(STAR_TXT[N.stars] || '') + '</p>' +
+    '<label class="lbl" for="rTxt" style="margin-top:6px">Ulasan (boleh dikosongkan)</label>' +
+    '<textarea id="rTxt" maxlength="500" placeholder="Misalnya: barang sesuai, pengiriman tepat waktu."></textarea><div class="count" id="rCnt">0 / 500</div>' +
+    '<button class="btn cta block" type="button" id="rSend"' + (N.stars ? '' : ' disabled') + '>Kirim ulasan</button><p class="msg hide" id="rMsg" role="status"></p></section>';
+}
+
+function footHtml() {
+  return '<footer class="foot"><div class="qr hide" id="qr" role="img" aria-label="Kode QR link nota ini"></div><p class="noprint" id="qrTxt" style="margin:8px 0 0"></p>' +
+    '<div class="acts"><button class="btn" type="button" id="bPrint">' + ICON.print + 'Cetak nota</button><button class="btn" type="button" id="bCopy">' + ICON.link + 'Salin link</button></div>' +
+    '<p>Ada pertanyaan tentang pesanan ini? Balas pesan WhatsApp yang mengirim link ini.</p>' +
+    '<p><a href="https://sadyakersa.com" target="_blank" rel="noopener">sadyakersa.com</a></p></footer>';
+}
+
+function render() {
+  var d = N.d;
+  document.title = 'Nota ' + d.inv + ' | Sadya Kersa';
+  $('app').innerHTML = paperHtml(d) + stepsHtml(d) + rateHtml(d) + footHtml();
+  bindRate();
+  $('bPrint').addEventListener('click', function () { window.print(); });
+  $('bCopy').addEventListener('click', function () {
+    var b = $('bCopy'), done = function (ok) { b.lastChild.textContent = ok ? 'Link tersalin' : 'Tidak bisa menyalin'; setTimeout(function () { b.lastChild.textContent = 'Salin link'; }, 2200); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link()).then(function () { done(true); }, function () { done(false); });
+    else done(false);
+  });
+  drawQr();
+}
+
+function drawQr() {
+  if (typeof window.qrcode !== 'function') { setTimeout(function () { if (typeof window.qrcode === 'function') drawQr(); }, 800); return; }
+  try {
+    var q = window.qrcode(0, 'M');
+    q.addData(link());
+    q.make();
+    $('qr').innerHTML = q.createSvgTag(4, 0);
+    $('qr').classList.remove('hide');
+    $('qrTxt').textContent = 'Pindai untuk membuka nota ini di HP lain.';
+  } catch (e) { return; } // no QR: the link still works
+}
+
+function bindRate() {
+  var ed = $('rEdit');
+  if (ed) ed.addEventListener('click', function () { N.edit = true; N.stars = N.d.rating.stars; reRate(N.d.rating.comment); });
+  var send = $('rSend');
+  if (!send) return;
+  Array.prototype.forEach.call(document.querySelectorAll('.star'), function (b) {
+    b.addEventListener('click', function () {
+      N.stars = +b.getAttribute('data-s');
+      Array.prototype.forEach.call(document.querySelectorAll('.star'), function (x) {
+        var s = +x.getAttribute('data-s');
+        x.classList.toggle('on', s <= N.stars);
+        x.setAttribute('aria-pressed', String(s === N.stars));
+      });
+      $('sLbl').textContent = STAR_TXT[N.stars];
+      send.disabled = N.busy;
+    });
+  });
+  $('rTxt').addEventListener('input', function () { $('rCnt').textContent = $('rTxt').value.length + ' / 500'; });
+  send.addEventListener('click', function () {
+    if (!N.stars || N.busy) return;
+    N.busy = true; send.disabled = true; send.textContent = 'Mengirim...';
+    var m = $('rMsg'); m.className = 'msg hide';
+    call('skpNotaRate', [CODE, N.stars, $('rTxt').value]).then(function (r) {
+      N.busy = false; N.edit = false; N.d.rating = r; reRate();
+    }, function (e) {
+      N.busy = false; send.disabled = false; send.textContent = 'Kirim ulasan';
+      m.className = 'msg err'; m.textContent = e.code === 'NOTA_TIDAK_ADA' ? 'Link nota ini tidak dikenal lagi. Minta link baru ke admin Sadya Kersa.' : e.message;
+    });
+  });
+}
+function reRate(text) {
+  var box = $('rate'), tmp = document.createElement('div');
+  tmp.innerHTML = rateHtml(N.d);
+  var fresh = tmp.firstChild;
+  fresh.style.animation = 'none';
+  box.parentNode.replaceChild(fresh, box);
+  bindRate();
+  if (text !== undefined && $('rTxt')) { $('rTxt').value = text; $('rCnt').textContent = text.length + ' / 500'; }
+}
+
+load();
+</script>
+</body>
+</html>
