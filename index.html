@@ -8,7 +8,7 @@
 <meta name="robots" content="noindex">
 <link rel="icon" href="icon.png">
 <link rel="apple-touch-icon" href="icon.png">
-<script>window.SKP_API = {"url":"https://script.google.com/macros/s/AKfycbwzm6vI7CH0DHvUhK8n6pCoSvNnOQgrvN453tYC5upts-OmrElAP5eH-1k0rrLAGQy5/exec","version":"1.1.7","mode":"prod","privacy":"https://pelanggan.sadyakersa.com/privasi/"};</script>
+<script>window.SKP_API = {"url":"https://script.google.com/macros/s/AKfycbwzm6vI7CH0DHvUhK8n6pCoSvNnOQgrvN453tYC5upts-OmrElAP5eH-1k0rrLAGQy5/exec","version":"1.1.8","mode":"prod","privacy":"https://pelanggan.sadyakersa.com/privasi/"};</script>
 <meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
@@ -463,7 +463,7 @@ function schoolArt(name) { return SKP_ART[{ SD: 'sch_1', SMP: 'sch_2', SMA: 'sch
 var SKP_BULAN = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
 var SKP_BULAN_PANJANG = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 var SKP_SJ = { Disiapkan: '', Dikirim: 'amber', Diterima: 'green' };
-var SKP_STEP = { invoice: '', disiapkan: '', dikirim: 'amber', diterima: 'green', masalah: 'red', lunas: 'green' };
+var SKP_STEP = { invoice: '', disiapkan: '', dikirim: 'amber', retur: 'red', diterima: 'green', masalah: 'red', lunas: 'green' };
 
 function $(id) { return document.getElementById(id); }
 function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
@@ -961,7 +961,7 @@ function closeSheet() {
   SKP_SHEET_T = setTimeout(function () { sh.classList.add('hide'); sh.classList.remove('closing'); $('sheetPanel').style.transform = ''; }, 210);
 }
 // The school's check of each line (Firman's columns Checklist, Selisih, Keterangan), then KIRIM.
-var SKP_KET = ['Kurang', 'Lebih', 'Rusak', 'Salah barang'];
+var SKP_KET = ['Kurang', 'Lebih', 'Rusak', 'Salah barang', 'Beda spesifikasi']; // 18 Nov: Beda spesifikasi (server SKP.KET)
 function checksOf(s) {
   return SKP.checks[s.no] || (SKP.checks[s.no] = s.lines.map(function () { return { ok: null, diff: '', ket: '' }; }));
 }
@@ -1065,7 +1065,7 @@ function vInvD(d) {
   var i = invOf(SKP.key);
   backTop('inv', 'Invoice', SKP.key, i ? tglPanjang(i.date) : '');
   if (!i) return '<div class="note amber">Invoice tidak ditemukan. Muat ulang data.</div>';
-  var code = i.status === 'Lunas' ? 'lunas' : i.step.code, at = { invoice: 0, disiapkan: 0, dikirim: 1, diterima: 2, masalah: 2, lunas: 3 }[code];
+  var code = i.status === 'Lunas' ? 'lunas' : i.step.code, at = { invoice: 0, disiapkan: 0, dikirim: 1, retur: 1, diterima: 2, masalah: 2, lunas: 3 }[code];
   var today = d.today || new Date().toISOString().slice(0, 10), pay, left;
   if (i.status === 'Lunas') pay = '<div class="ipay">' + SKP_ICON.okc + '<span>Lunas' + (i.paidDate ? ' ' + esc(tglPanjang(i.paidDate)) : '') + '</span></div>';
   else if (i.due) { left = daysTo(today, i.due); pay = '<div class="ipay' + (left < 0 ? ' late' : '') + '">' + SKP_ICON.clock + '<span>' + (left < 0 ? 'Lewat jatuh tempo ' + (-left) + ' hari' : left === 0 ? 'Jatuh tempo hari ini' : 'Jatuh tempo ' + esc(tgl(i.due)) + ', ' + left + ' hari lagi') + '</span></div>'; }
@@ -1126,7 +1126,7 @@ function vProfil(d) {
     '<span class="hbschool sm"><img src="' + schoolArt(d.me.name) + '" alt="" width="44" height="44">' + (jj ? '<i>' + jj + '</i>' : '') + '</span>');
   var p = d.profile || {}, years = Object.keys(d.totals.years || {}).sort().reverse();
   var h = '<div class="card"><dl class="kv rows"><dt>PIC</dt><dd>' + esc(p.pic || '-') + (p.role ? '<br><span class="muted small">' + esc(p.role) + '</span>' : '') + '</dd>' +
-    '<dt>No HP</dt><dd>' + esc(p.phone || '-') + '</dd><dt>Email</dt><dd>' + esc(p.email || '-') + '</dd><dt>Alamat kirim</dt><dd style="white-space:pre-wrap">' + esc(p.address || '-') + '</dd>' +
+    '<dt>No HP</dt><dd>' + esc(p.phone || '-') + '</dd><dt>Kepala Sekolah</dt><dd>' + esc(p.kepsek || '-') + (p.kepsekPhone ? '<br><span class="muted small">' + esc(p.kepsekPhone) + '</span>' : '') + '</dd><dt>Email</dt><dd>' + esc(p.email || '-') + '</dd><dt>Alamat kirim</dt><dd style="white-space:pre-wrap">' + esc(p.address || '-') + '</dd>' +
     '<dt>Rekening sekolah</dt><dd>' + (p.account ? esc(p.bank) + '<br>' + esc(p.account) + '<br><span class="muted small">a.n. ' + esc(p.holder) + '</span>' : '-') + '</dd></dl>' +
     '<button class="btn brand block" style="margin-top:14px" onclick="profileSheet()">Ubah data sekolah</button></div>';
   if (!p.pic || !p.phone || !p.address) h += '<div class="note amber">Lengkapi PIC, nomor HP dan alamat kirim agar pengiriman lancar.</div>';
@@ -1146,6 +1146,7 @@ function profileSheet() {
   var p = SKP.data.profile || {};
   var f = function (id, label, v, type, ph) { return '<div class="field"><label for="' + id + '">' + label + '</label><input id="' + id + '" type="' + (type || 'text') + '" value="' + esc(v) + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : '') + '></div>'; };
   openSheet('<h2>Ubah data sekolah</h2>' + f('pPic', 'Nama PIC', p.pic) + f('pRole', 'Jabatan PIC', p.role, '', 'Contoh: Bendahara BOS') + f('pPhone', 'No HP PIC', p.phone, 'tel', '0812 3456 7890') +
+    f('pKs', 'Nama Kepala Sekolah', p.kepsek) + f('pKsPhone', 'No HP Kepala Sekolah', p.kepsekPhone, 'tel', '0812 3456 7890') +
     f('pEmail', 'Email', p.email, 'email') + '<div class="field"><label for="pAddr">Alamat kirim</label><textarea id="pAddr" placeholder="Alamat lengkap sekolah">' + esc(p.address) + '</textarea></div>' +
     '<h2 style="margin-top:22px">Rekening sekolah</h2><p class="muted small" style="margin-top:-6px">Untuk pembayaran cash back dari SNAPP. Hanya terlihat oleh sekolah Anda dan admin SNAPP.</p>' +
     f('pBank', 'Bank', p.bank, '', 'Contoh: BJB') + f('pAcc', 'No rekening', p.account, 'text') + f('pHolder', 'Atas nama', p.holder) +
@@ -1153,7 +1154,7 @@ function profileSheet() {
 }
 function saveProfile() {
   var v = function (id) { return $(id).value; };
-  var p = { pic: v('pPic'), role: v('pRole'), phone: v('pPhone'), email: v('pEmail'), address: v('pAddr'), bank: v('pBank'), account: v('pAcc'), holder: v('pHolder') };
+  var p = { pic: v('pPic'), role: v('pRole'), phone: v('pPhone'), kepsek: v('pKs'), kepsekPhone: v('pKsPhone'), email: v('pEmail'), address: v('pAddr'), bank: v('pBank'), account: v('pAcc'), holder: v('pHolder') };
   if (!opStart('profile')) return;
   busy(true, 'Menyimpan...');
   call('skpProfile', SKP.token, p).then(function (r) { opEnd(); busy(false); SKP.data.profile = r; store('skp_home', JSON.stringify(SKP.data)); closeSheet(); render(); toast('Data sekolah disimpan.', true); })
