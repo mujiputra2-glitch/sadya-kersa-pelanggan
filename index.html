@@ -8,7 +8,7 @@
 <meta name="robots" content="noindex">
 <link rel="icon" href="icon.png">
 <link rel="apple-touch-icon" href="icon.png">
-<script>window.SKP_API = {"url":"https://script.google.com/macros/s/AKfycbwzm6vI7CH0DHvUhK8n6pCoSvNnOQgrvN453tYC5upts-OmrElAP5eH-1k0rrLAGQy5/exec","version":"1.1.8","mode":"prod","privacy":"https://pelanggan.sadyakersa.com/privasi/"};</script>
+<script>window.SKP_API = {"url":"https://script.google.com/macros/s/AKfycbwzm6vI7CH0DHvUhK8n6pCoSvNnOQgrvN453tYC5upts-OmrElAP5eH-1k0rrLAGQy5/exec","version":"1.1.8","mode":"prod","google":"","privacy":"https://pelanggan.sadyakersa.com/privasi/"};</script>
 <meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
@@ -217,6 +217,26 @@
   .lschools img { width: 62px; height: 62px; filter: drop-shadow(0 6px 8px rgba(22, 23, 79, .12)); }
   .lcard { background: #fff; border: 1px solid rgba(226, 230, 244, .9); border-radius: 22px; box-shadow: 0 10px 28px rgba(39, 40, 192, .09); padding: 18px 18px 20px; }
   .lcard .field:first-child { margin-top: 0; }
+  .gbtn { background: #fff; border: 1.5px solid #D5DBF0; color: var(--ink); min-height: 54px; font-size: 17px; }
+  .gbtn svg { width: 22px; height: 22px; }
+  .ordiv { display: flex; align-items: center; gap: 10px; margin: 16px 0 2px; font-size: 13.5px; color: var(--muted); }
+  .ordiv::before, .ordiv::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+  .lsign { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 14px; padding: 16px 18px; }
+  .lsign b { display: block; color: var(--ink); } .lsign span { display: block; font-size: 14px; color: var(--muted); }
+  .lsign .btn { flex: none; min-width: 110px; }
+  .req { color: var(--cta); font-weight: 800; }
+  .gchip { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 14px; background: var(--tint); }
+  .gchip svg { flex: none; width: 22px; height: 22px; } .gchip .t { flex: 1; min-width: 0; } .gchip b { display: block; color: var(--ink); font-size: 15.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .gchip .t > span { display: block; font-size: 13.5px; color: var(--muted); white-space: nowrap; }
+  .gchip .btn.quiet { flex: none; width: auto; min-height: 40px; margin: 0; padding: 0 6px; }
+  .track.lt { margin-top: 6px; }
+  .track.lt::before { background: var(--line); } .track.lt .fill { background: var(--brand); }
+  .track.lt div { color: var(--muted); } .track.lt div::before { background: #fff; border-color: var(--line); }
+  .track.lt div.on, .track.lt div.now { color: var(--ink); font-weight: 700; }
+  .track.lt div.on::before { border-color: var(--brand); background: var(--brand) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4 8-9'/%3E%3C/svg%3E") center / 12px no-repeat; }
+  .track.lt div.now::before { border-color: var(--brand); box-shadow: 0 0 0 5px rgba(39, 40, 192, .14); }
+  .item.locked { opacity: .72; } .item.locked .t b { color: var(--muted); }
+  .btn.danger { width: 100%; background: transparent; border-color: transparent; box-shadow: none; color: var(--red); min-height: 48px; margin-top: 4px; }
+  .btn.cta.red { background: var(--red); box-shadow: 0 8px 20px rgba(220, 38, 38, .22); }
 
   :root { --e-out: cubic-bezier(.23, 1, .32, 1); --e-drawer: cubic-bezier(.32, .72, 0, 1); }
   body { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
@@ -387,13 +407,18 @@
   <div class="muted small" style="margin-top:4px">Status order, surat jalan dan invoice sekolah Anda</div>
   <div class="lschools" id="lgSchools" aria-hidden="true"></div>
   <div class="lcard">
-  <div class="field"><label for="lgWho">Username</label><input id="lgWho" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Contoh: smpn2cimahi"></div>
+  <button id="lgGoogle" class="btn gbtn block" type="button"></button>
+  <div class="ordiv"><span>atau masuk dengan nomor HP</span></div>
+  <div class="field"><label for="lgWho">Nomor HP atau username</label><input id="lgWho" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="0812 3456 7890"></div>
   <div class="field"><label for="lgPin">PIN 6 angka</label><input id="lgPin" class="pin" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password" placeholder="......"></div>
   <div id="lgErr" class="err hide"></div>
   <button id="lgBtn" class="btn brand block" style="margin-top:22px;min-height:58px;font-size:19px">Masuk</button>
   </div>
-  <p class="muted small" style="margin-top:18px">Username dan PIN diberikan oleh admin SNAPP. Lupa PIN? Hubungi sales atau admin SNAPP.</p>
+  <div class="lcard lsign"><div><b>Belum punya akun?</b><span>Daftar sendiri, kurang dari 1 menit.</span></div><button id="lgSign" class="btn cta" type="button">Daftar</button></div>
+  <p class="muted small" style="margin-top:16px">Lupa PIN? Hubungi admin SNAPP.</p>
 </div>
+
+<div id="vSignup" class="login hide"></div>
 
 <div id="vApp" class="hide">
   <div id="updBar" class="updbar hide" role="status">Ada versi baru aplikasi. Perbarui aplikasi untuk melanjutkan.</div>
@@ -516,20 +541,199 @@ function call(fn) {
 }
 
 // ---------- login ----------
-function showLogin(msg) { $('vApp').classList.add('hide'); $('vLogin').classList.remove('hide'); $('lgErr').classList.toggle('hide', !msg); $('lgErr').textContent = msg || ''; }
+function showLogin(msg) { $('vApp').classList.add('hide'); $('vSignup').classList.add('hide'); $('vLogin').classList.remove('hide'); $('lgErr').classList.toggle('hide', !msg); $('lgErr').textContent = msg || ''; }
 function doLogin() {
   var who = $('lgWho').value.trim(), pin = $('lgPin').value.trim();
   if (SKP.op) return; // Enter and the button together, or a second tap
-  if (!who || !/^\d{6}$/.test(pin)) { showLogin('Isi username dan PIN 6 angka.'); shake(); return; }
+  if (!who || !/^\d{6}$/.test(pin)) { showLogin('Isi nomor HP (atau username) dan PIN 6 angka.'); shake(); return; }
   opStart('login'); busy(true, 'Masuk...');
   var slow = setTimeout(function () { if (SKP.op === 'login') busy(true, 'Menyiapkan data sekolah...'); }, 2500);
   call('skpLogin', who, pin, true).then(function (r) {
-    clearTimeout(slow); opEnd(); SKP_SESS++;
-    SKP.token = r.token; store('skp_token', r.token); store('skp_who', who); $('lgPin').value = ''; $('lgPin').blur();
-    // 17 Nov: a home the server had ready (homeAt) shows at once; older than 3 minutes, Google refreshes it quietly
-    if (r.home) { homeReady(r.home, true, r.homeAt); if (r.homeAt && Date.now() - r.homeAt > 180000) loadHome(false); return; }
-    return loadHome(true);
+    clearTimeout(slow); opEnd(); $('lgPin').value = ''; $('lgPin').blur();
+    return loginDone(r, who);
   }).catch(function (e) { clearTimeout(slow); opEnd(); busy(false); showLogin(e.message); shake(); });
+}
+// Into the app after any login or sign-up (r: token, and the home when the server sent it along).
+function loginDone(r, who) {
+  SKP_SESS++; SKP.g = null;
+  SKP.token = r.token; store('skp_token', r.token); if (who) store('skp_who', who);
+  $('vSignup').classList.add('hide');
+  // 17 Nov: a home the server had ready (homeAt) shows at once; older than 3 minutes, Google refreshes it quietly
+  if (r.home) { SKP.view = 'home'; homeReady(r.home, true, r.homeAt); if (r.homeAt && Date.now() - r.homeAt > 180000) loadHome(false); return; }
+  return loadHome(true);
+}
+
+// ---------- 22 Nov: Masuk dengan Google, and schools making their own login (Daftar) ----------
+var SKP_AREAS = ['Kota Bandung', 'Kab. Bandung', 'Bandung Barat', 'Kota Cimahi', 'Lainnya']; // the same list as the server (SKP.AREAS)
+var SKP_G = '<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59A14.5 14.5 0 0 1 9.5 24c0-1.59.28-3.14.76-4.59l-7.98-6.19A23.94 23.94 0 0 0 0 24c0 3.77.9 7.35 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
+var SKP_GCB = null; // what to do with the Google ID token once Google gives it
+// Google's sign-in. The dev server has no Google: a fictional account picker stands in (SKP_API.google = 'dev').
+function googleStart(cb) {
+  var cfg = window.SKP_API || {};
+  SKP_GCB = cb;
+  if (cfg.google === 'dev') {
+    openSheet('<h2>Pilih akun Google</h2><p class="muted small" style="margin-top:-6px">Contoh di server uji, bukan Google sungguhan.</p>' +
+      '<button class="item" onclick="googleDev(\'guru.contoh@example.test\',\'Guru Contoh\')"><span class="lic">' + SKP_ICON.chat + '</span><span class="t"><b>Guru Contoh</b><span>guru.contoh@example.test</span></span>' + SKP_ICON.right + '</button>' +
+      '<button class="btn block" style="margin-top:12px" onclick="closeSheet()">Batal</button>');
+    return;
+  }
+  if (!cfg.google) { toast('Masuk dengan Google belum aktif. Pakai nomor HP dulu.'); return; }
+  var go2 = function () {
+    google.accounts.id.initialize({ client_id: cfg.google, callback: function (r) { if (r && r.credential && SKP_GCB) SKP_GCB(r.credential); }, ux_mode: 'popup', use_fedcm_for_prompt: true });
+    google.accounts.id.prompt();
+  };
+  if (window.google && google.accounts && google.accounts.id) return go2();
+  var s = document.createElement('script'); s.src = 'https://accounts.google.com/gsi/client'; s.async = true; s.onload = go2;
+  s.onerror = function () { toast('Google tidak bisa dibuka. Cek internet, atau pakai nomor HP.'); };
+  document.head.appendChild(s);
+}
+function googleDev(email, name) { closeSheet(); if (SKP_GCB) SKP_GCB('dev:' + email + '|' + name); }
+// Masuk dengan Google (login screen or sign-up form): a known account goes in; a new one fills the school form.
+function googleLogin() {
+  googleStart(function (idToken) {
+    if (!opStart('google')) return;
+    busy(true, 'Masuk dengan Google...');
+    call('skpLoginGoogle', idToken, true).then(function (r) {
+      opEnd(); busy(false);
+      if (r.signup) { SKP.g = { token: idToken, email: r.email, name: r.name }; showSignup(); return; }
+      return loginDone(r, '');
+    }).catch(function (e) { opEnd(); busy(false); if ($('vSignup').classList.contains('hide')) { showLogin(e.message); shake(); } else showErr('sgErr', e.message); });
+  });
+}
+// The sign-up form. SKP.g = a Google account waiting for its school data; else phone number + PIN.
+function showSignup() {
+  var g = SKP.g, keep = SKP.sg || {}, f = function (id, label, type, ph, extra) {
+    return '<div class="field"><label for="' + id + '">' + label + ' <span class="req" aria-hidden="true">*</span></label><input id="' + id + '" type="' + (type || 'text') + '" value="' + esc(keep[id] || '') + '"' +
+      (ph ? ' placeholder="' + esc(ph) + '"' : '') + (extra || '') + ' required></div>';
+  };
+  if (g && !keep.sgPic && g.name) keep.sgPic = g.name;
+  $('vLogin').classList.add('hide'); $('vApp').classList.add('hide');
+  $('vSignup').innerHTML = '<button class="back" onclick="hideSignup()">' + SKP_ICON.left + 'Kembali</button>' +
+    '<h1 style="margin-top:6px">Daftar SNAPP</h1><div class="muted small" style="margin-top:4px">Untuk sekolah pelanggan. Isi sekali, langsung bisa dipakai.</div>' +
+    '<div class="caption">1. Cara masuk</div><div class="lcard">' +
+    (g ? '<div class="gchip">' + SKP_G + '<span class="t"><b>' + esc(g.email) + '</b><span>Masuk dengan Google</span></span><button class="btn quiet" onclick="SKP.g=null;showSignup()">Ganti</button></div>'
+      : ((window.SKP_API || {}).google ? '<button class="btn gbtn block" type="button" onclick="googleLogin()">' + SKP_G + 'Daftar dengan Google</button><div class="ordiv"><span>atau pakai nomor HP</span></div>' : '') +
+        f('sgPhone', 'Nomor HP', 'tel', '0812 3456 7890', ' autocomplete="tel" inputmode="tel"') +
+        '<div class="field"><label for="sgPin">Buat PIN 6 angka <span class="req" aria-hidden="true">*</span></label><input id="sgPin" class="pin" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password" placeholder="......"></div>' +
+        '<div class="field"><label for="sgPin2">Ulangi PIN <span class="req" aria-hidden="true">*</span></label><input id="sgPin2" class="pin" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password" placeholder="......"></div>') +
+    '</div><div class="caption">2. Data sekolah</div><div class="lcard">' +
+    f('sgSchool', 'Nama sekolah', '', 'Contoh: SMPN 2 Cimahi') +
+    '<div class="field"><label for="sgArea">Wilayah <span class="req" aria-hidden="true">*</span></label><select id="sgArea"><option value="">Pilih wilayah</option>' +
+      SKP_AREAS.map(function (a) { return '<option' + (keep.sgArea === a ? ' selected' : '') + '>' + esc(a) + '</option>'; }).join('') + '</select></div>' +
+    f('sgPic', 'Nama PIC', '', 'Penanggung jawab di sekolah') + f('sgRole', 'Jabatan PIC', '', 'Contoh: Bendahara BOS') +
+    f('sgPicPhone', 'No HP PIC', 'tel', '0812 3456 7890', ' inputmode="tel"') +
+    f('sgKs', 'Nama Kepala Sekolah') + f('sgKsPhone', 'No HP Kepala Sekolah', 'tel', '0812 3456 7890', ' inputmode="tel"') +
+    '<p class="muted small" style="margin:14px 0 0"><span class="req">*</span> wajib diisi</p></div>' +
+    '<div class="note">Setelah daftar, admin SNAPP mengecek data sekolah Anda. Invoice, kiriman dan rekening sekolah terbuka setelah dikonfirmasi.</div>' +
+    '<div id="sgErr" class="err hide"></div><button class="btn cta block" style="margin-top:16px;min-height:58px;font-size:18px" onclick="doSignup()">Daftar</button>' +
+    '<p class="muted small" style="margin-top:14px">Sudah punya akun? <a href="#" onclick="hideSignup();return false">Masuk</a></p>';
+  $('vSignup').classList.remove('hide');
+  var ph = $('sgPhone'), pp = $('sgPicPhone');
+  if (ph && pp) ph.addEventListener('blur', function () { if (!pp.value.trim()) pp.value = ph.value; }); // usually the PIC signs up with their own number
+  window.scrollTo(0, 0);
+}
+function hideSignup() { signupKeep(); $('vSignup').classList.add('hide'); showLogin(''); }
+// What was typed stays when the form is drawn again (Google picked, back and forth); never the PIN.
+function signupKeep() {
+  var k = SKP.sg = SKP.sg || {};
+  ['sgPhone', 'sgSchool', 'sgArea', 'sgPic', 'sgRole', 'sgPicPhone', 'sgKs', 'sgKsPhone'].forEach(function (id) { if ($(id)) k[id] = $(id).value; });
+}
+function doSignup() {
+  if (SKP.op) return;
+  signupKeep();
+  var k = SKP.sg, phoneOk = function (v) { return /^(\+?62|0)?8\d{7,12}$/.test(String(v || '').replace(/[\s.-]+/g, '')); };
+  var p = { school: k.sgSchool, area: k.sgArea, pic: k.sgPic, role: k.sgRole, picPhone: k.sgPicPhone, kepsek: k.sgKs, kepsekPhone: k.sgKsPhone };
+  var err = '';
+  if (SKP.g) { p.via = 'google'; p.idToken = SKP.g.token; }
+  else {
+    p.via = 'hp'; p.phone = k.sgPhone; p.pin = $('sgPin').value.trim();
+    if (!phoneOk(p.phone)) err = 'Isi nomor HP untuk masuk. Contoh: 0812 3456 7890.';
+    else if (!/^\d{6}$/.test(p.pin)) err = 'Buat PIN 6 angka.';
+    else if (p.pin !== $('sgPin2').value.trim()) err = 'PIN dan ulangi PIN tidak sama.';
+  }
+  if (!err && String(p.school || '').trim().length < 4) err = 'Tulis nama sekolah lengkap.';
+  else if (!err && !p.area) err = 'Pilih wilayah sekolah.';
+  else if (!err && (!String(p.pic || '').trim() || !String(p.role || '').trim())) err = 'Isi nama dan jabatan PIC.';
+  else if (!err && !phoneOk(p.picPhone)) err = 'Nomor HP PIC tidak valid. Contoh: 0812 3456 7890.';
+  else if (!err && !String(p.kepsek || '').trim()) err = 'Isi nama Kepala Sekolah.';
+  else if (!err && !phoneOk(p.kepsekPhone)) err = 'Nomor HP Kepala Sekolah tidak valid. Contoh: 0812 3456 7890.';
+  if (err) { showErr('sgErr', err); return; }
+  opStart('signup'); busy(true, 'Mendaftarkan...');
+  call('skpSignup', p, true).then(function (r) { opEnd(); SKP.sg = null; return loginDone(r, p.via === 'hp' ? p.phone : ''); })
+    .catch(function (e) { opEnd(); busy(false); showErr('sgErr', e.message); });
+}
+
+// A waiting login (Menunggu): its own sign-up, order files, and what opens after the Admin's confirmation.
+function vWait(d) {
+  var s = d.signup || {}, jj = jenjangOf(s.school);
+  setTop('<div class="hbrow"><div class="brandrow"><span class="mark">' + SKP_MARK + '</span><div class="hbname"><b>SNAPP</b><span>Aplikasi sekolah</span></div></div>' +
+    '<button class="iconbtn" onclick="refreshHome(this)" aria-label="Muat ulang">' + SKP_ICON.reload + '</button></div>' +
+    '<div class="hbmain"><div class="hbtext"><div class="sub">Selamat ' + waktu() + ', ' + esc(s.pic || d.me.user) + '</div><h1>' + esc(s.school || d.me.name) + '</h1>' +
+    '<div class="hbpill">' + SKP_ICON.clock + 'Sedang dicek admin SNAPP</div></div>' +
+    '<span class="hbschool"><img src="' + schoolArt(s.school) + '" alt="" width="58" height="58">' + (jj ? '<i>' + jj + '</i>' : '') + '</span></div>');
+  var lock = function (icon, t, sub) { return '<div class="item locked"><span class="lic grey">' + icon + '</span><span class="t"><b>' + t + '</b><span>' + sub + '</span></span></div>'; };
+  var h = '<div class="float lift"><div class="track lt" style="--n:3;--p:.5"><span class="fill"></span><div class="on">Daftar</div><div class="now">Dicek admin</div><div>Semua terbuka</div></div>' +
+    '<p style="margin:14px 0 0">Terima kasih sudah mendaftar. Admin SNAPP sedang mencocokkan data sekolah Anda, dan bisa menghubungi PIC lewat WhatsApp bila perlu.</p></div>';
+  h += '<div class="caption">Sudah bisa dipakai</div><button class="item" onclick="go(\'file\')"><span class="lic">' + SKP_ICON.upload + '</span><span class="t"><b>Kirim file order</b><span>' +
+    ((d.files || []).length ? d.files.length + ' file sudah terkirim' : 'Excel, PDF atau foto daftar order') + '</span></span>' + SKP_CHEV + '</button>';
+  h += '<div class="caption">Terbuka setelah dikonfirmasi</div>' + lock(SKP_ICON.receipt, 'Invoice dan status bayar', 'Semua invoice sekolah Anda') +
+    lock(SKP_ICON.truck, 'Kiriman dan surat jalan', 'Konfirmasi barang diterima') + lock(SKP_ICON.wallet, 'Rekening sekolah', 'Untuk pembayaran cash back');
+  h += '<div class="caption">Data pendaftaran</div><div class="card"><dl class="kv rows"><dt>Sekolah</dt><dd>' + esc(s.school) + '<br><span class="muted small">' + esc(s.area) + '</span></dd>' +
+    '<dt>PIC</dt><dd>' + esc(s.pic) + '<br><span class="muted small">' + esc(s.role) + ' · ' + esc(s.picPhone) + '</span></dd>' +
+    '<dt>Kepala Sekolah</dt><dd>' + esc(s.kepsek) + '<br><span class="muted small">' + esc(s.kepsekPhone) + '</span></dd></dl>' +
+    '<button class="btn block" style="margin-top:14px" onclick="waitEditSheet()">Ubah data pendaftaran</button></div>';
+  return h + accountCard(d);
+}
+// The account card (Sekolah tab and waiting screen): how this person logs in, Keluar, Hapus akun.
+function accountCard(d) {
+  var me = d.me || {}, how = me.via === 'google' ? ['Google', me.email] : me.via === 'hp' ? ['Nomor HP', me.phone] : ['Username', me.user];
+  var cfg = window.SKP_API || {};
+  return '<div class="caption">Akun</div><div class="card"><dl class="kv"><dt>Masuk dengan</dt><dd>' + esc(how[0]) + '<br><span class="muted small">' + esc(how[1] || '') + '</span></dd></dl>' +
+    '<button class="btn block" style="margin-top:12px" onclick="doLogout()">' + SKP_ICON.out + 'Keluar</button>' +
+    (me.via === 'google' || me.via === 'hp' ? '<button class="btn danger" onclick="deleteSheet()">Hapus akun</button>' : '') + '</div>' +
+    '<p class="muted small" style="text-align:center;margin-top:18px">SNAPP' + (cfg.version ? ' · versi ' + esc(cfg.version) : '') +
+    (/^https:\/\//.test(cfg.privacy || '') ? ' · <a href="' + esc(cfg.privacy) + '" target="_blank" rel="noopener">Kebijakan privasi</a>' : '') + '</p>';
+}
+function waitEditSheet() {
+  var s = SKP.data.signup || {}, f = function (id, label, v, type, ph) {
+    return '<div class="field"><label for="' + id + '">' + label + ' <span class="req" aria-hidden="true">*</span></label><input id="' + id + '" type="' + (type || 'text') + '" value="' + esc(v) + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : '') + '></div>';
+  };
+  openSheet('<h2>Ubah data pendaftaran</h2>' + f('wSchool', 'Nama sekolah', s.school) +
+    '<div class="field"><label for="wArea">Wilayah <span class="req" aria-hidden="true">*</span></label><select id="wArea">' + SKP_AREAS.map(function (a) { return '<option' + (s.area === a ? ' selected' : '') + '>' + esc(a) + '</option>'; }).join('') + '</select></div>' +
+    f('wPic', 'Nama PIC', s.pic) + f('wRole', 'Jabatan PIC', s.role) + f('wPicPhone', 'No HP PIC', s.picPhone, 'tel', '0812 3456 7890') +
+    f('wKs', 'Nama Kepala Sekolah', s.kepsek) + f('wKsPhone', 'No HP Kepala Sekolah', s.kepsekPhone, 'tel', '0812 3456 7890') +
+    '<div id="wErr" class="err hide"></div><div class="btnrow"><button class="btn" onclick="closeSheet()">Batal</button><button class="btn brand" onclick="saveWait()">Simpan</button></div>');
+}
+function saveWait() {
+  var v = function (id) { return $(id).value; };
+  var p = { school: v('wSchool'), area: v('wArea'), pic: v('wPic'), role: v('wRole'), picPhone: v('wPicPhone'), kepsek: v('wKs'), kepsekPhone: v('wKsPhone') };
+  if (!opStart('wait')) return;
+  busy(true, 'Menyimpan...');
+  call('skpProfile', SKP.token, p).then(function (r) { opEnd(); busy(false); SKP.data.signup = Object.assign({}, SKP.data.signup, r.signup); store('skp_home', JSON.stringify(SKP.data)); closeSheet(); render(); toast('Data pendaftaran disimpan.', true); })
+    .catch(function (e) { opEnd(); busy(false); showErr('wErr', e.message); });
+}
+// A confirmed school whose profile lacks PIC or Kepala Sekolah fills them in first.
+function vNeed(d) {
+  setTop('<div class="hbrow"><div class="brandrow"><span class="mark">' + SKP_MARK + '</span><div class="hbname"><b>SNAPP</b><span>' + esc(d.me.name) + '</span></div></div></div>');
+  return '<div class="float"><span class="lic amber">' + SKP_ICON.alert + '</span><h2 style="margin-top:12px">Lengkapi data sekolah dulu</h2>' +
+    '<p style="margin:0">Akun Anda sudah dikonfirmasi. Sebelum lanjut, isi data yang wajib ini: <b>' + esc(d.needProfile.join(', ')) + '</b>.</p>' +
+    '<button class="btn cta block" style="margin-top:16px;min-height:56px" onclick="profileSheet()">Lengkapi sekarang</button></div>';
+}
+function deleteSheet() {
+  var me = SKP.data.me || {}, pin = me.via === 'hp';
+  openSheet('<h2>Hapus akun?</h2><p style="margin-top:-4px">Login Anda (' + esc(pin ? me.phone : me.email) + ') dan data pribadi Anda di SNAPP dihapus, dan semua HP keluar. ' +
+    'Invoice dan surat jalan sekolah tetap tersimpan untuk keperluan pajak.</p>' +
+    (pin ? '<div class="field"><label for="dConf">Masukkan PIN Anda</label><input id="dConf" class="pin" type="password" inputmode="numeric" maxlength="6" placeholder="......"></div>'
+      : '<div class="field"><label for="dConf">Ketik HAPUS untuk lanjut</label><input id="dConf" type="text" autocapitalize="characters" placeholder="HAPUS"></div>') +
+    '<div id="dErr" class="err hide"></div><div class="btnrow"><button class="btn" onclick="closeSheet()">Batal</button><button class="btn cta red" onclick="doDelete()">Hapus akun</button></div>');
+}
+function doDelete() {
+  var c = $('dConf').value.trim();
+  if (!c) { showErr('dErr', SKP.data.me.via === 'hp' ? 'Masukkan PIN Anda.' : 'Ketik HAPUS untuk lanjut.'); return; }
+  if (!opStart('delete')) return;
+  busy(true, 'Menghapus akun...');
+  call('skpDeleteAccount', SKP.token, c).then(function () { opEnd(); store('skp_who', null); $('lgWho').value = ''; logoutLocal('Akun Anda sudah dihapus.'); })
+    .catch(function (e) { opEnd(); busy(false); showErr('dErr', e.message); });
 }
 function shake() { var c = document.querySelector('.lcard'); if (!c) return; c.classList.remove('shake'); void c.offsetWidth; c.classList.add('shake'); }
 // Everything of the old school goes: screen state, picked files, the open sheet, the daily reminder.
@@ -725,15 +929,23 @@ function navInd(nav) {
 function navOf(v) { return v === 'sj' ? 'kirim' : v === 'invd' ? 'inv' : v; }
 function render(soft) {
   var d = SKP.data; if (!d) return;
-  var m = $('main'), v = SKP.view, nav = navOf(v), sig = v + (v === 'sj' || v === 'invd' ? '|' + SKP.key : '');
+  // 22 Nov: a waiting login has only its home and the File screen; a confirmed school without PIC or Kepala
+  // Sekolah fills them in first. Neither has the bottom bar.
+  var gate = d.pending ? 'wait' : d.needProfile && d.needProfile.length ? 'need' : '';
+  if (gate === 'wait' && SKP.view !== 'file') SKP.view = 'home';
+  if (gate === 'need') SKP.view = 'home';
+  document.querySelector('.nav').classList.toggle('hide', !!gate);
+  var m = $('main'), v = SKP.view, nav = navOf(v), sig = (gate ? gate + ':' : '') + v + (v === 'sj' || v === 'invd' ? '|' + SKP.key : '');
   var prev = SKP.shown, changed = prev !== sig, dir = changed ? moveDir(prev, sig) : 0, ghost = changed && prev && !SKP_REDUCE ? ghostOf() : null;
+  var tt = d.totals || {};
   Array.prototype.forEach.call(document.querySelectorAll('.nav button'), function (b) {
-    var n = b.getAttribute('data-nav'), c = n === 'kirim' ? d.totals.toConfirm : n === 'inv' ? d.totals.toVerify : 0, badge = b.querySelector('i');
+    var n = b.getAttribute('data-nav'), c = n === 'kirim' ? tt.toConfirm : n === 'inv' ? tt.toVerify : 0, badge = b.querySelector('i');
     b.classList.toggle('on', n === nav);
     if (c && !badge) { badge = document.createElement('i'); b.appendChild(badge); }
     if (badge) { if (c) badge.textContent = c; else badge.remove(); }
   });
-  m.innerHTML = v === 'kirim' ? vKirim(d) : v === 'sj' ? vSj(d) : v === 'inv' ? vInv(d) : v === 'invd' ? vInvD(d) : v === 'file' ? vFile(d) : v === 'profil' ? vProfil(d) : vHome(d);
+  m.innerHTML = gate === 'need' ? vNeed(d) : v === 'file' ? vFile(d) : gate === 'wait' ? vWait(d) :
+    v === 'kirim' ? vKirim(d) : v === 'sj' ? vSj(d) : v === 'inv' ? vInv(d) : v === 'invd' ? vInvD(d) : v === 'profil' ? vProfil(d) : vHome(d);
   $('vApp').querySelector('.top').classList.toggle('homebar', v === 'home');
   SKP.shown = sig; SKP.pop = '';
   navInd(nav);
@@ -1009,7 +1221,8 @@ function doConfirm(no) {
 var SKP_FILE_EXT = /\.(xlsx|xls|csv|pdf|jpe?g|png|webp|heic|heif)$/i;
 function kb(n) { return n >= 1048576 ? String(Math.round(n / 104857.6) / 10).replace('.', ',') + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
 function vFile(d) {
-  setTop('<div><h1>Kirim file</h1><div class="sub">Order dalam Excel, PDF atau foto</div></div>');
+  if (d.pending) backTop('home', 'Kembali', 'Kirim file', 'Order dalam Excel, PDF atau foto'); // a waiting login has no bottom bar
+  else setTop('<div><h1>Kirim file</h1><div class="sub">Order dalam Excel, PDF atau foto</div></div>');
   var h = '<div class="card"><p class="small" style="margin:0">Kirim daftar order atau dokumen sekolah ke SNAPP. Paling banyak 3 file sekaligus, masing-masing sampai 10 MB.</p>' +
     '<div class="field"><input id="fuPick" class="fpick" type="file" multiple accept=".xlsx,.xls,.csv,.pdf,.jpg,.jpeg,.png,.webp,.heic,.heif" onchange="filePicked(this)">' +
     '<label for="fuPick" class="btn block drop" style="cursor:pointer">' + SKP_ICON.upload + '<span>' + (SKP.pick.length ? 'Ganti file' : 'Pilih file') + '</span><small>Excel, PDF atau foto</small></label></div>' +
@@ -1134,19 +1347,15 @@ function vProfil(d) {
   h += '<div class="caption">Transaksi per tahun</div><div class="card">' + (years.length ? years.map(function (y) {
     return '<div class="ybar"><span>' + esc(y) + '</span><span class="yt"><i style="--w:' + Math.max(0.02, (+d.totals.years[y] || 0) / top).toFixed(3) + '"></i></span><b>' + esc(rp(d.totals.years[y])) + '</b></div>';
   }).join('') : '<span class="muted">Belum ada transaksi.</span>') + '</div>';
-  h += '<div class="caption">Akun</div><div class="card"><dl class="kv"><dt>Username</dt><dd>' + esc(d.me.user) + '</dd></dl>' +
-    '<button class="btn block" style="margin-top:12px" onclick="doLogout()">' + SKP_ICON.out + 'Keluar</button></div>';
-  var cfg = window.SKP_API || {};
-  h += '<p class="muted small" style="text-align:center;margin-top:18px">SNAPP' + (cfg.version ? ' · versi ' + esc(cfg.version) : '') +
-    (/^https:\/\//.test(cfg.privacy || '') ? ' · <a href="' + esc(cfg.privacy) + '" target="_blank" rel="noopener">Kebijakan privasi</a>' : '') + '</p>';
-  return h;
+  return h + accountCard(d); // 22 Nov: how this person logs in, Keluar, Hapus akun
 }
 function profileSheet() {
   if (SKP.data.profile && SKP.data.profile.masked) { loadHome(true).then(function () { if (SKP.data && SKP.data.profile && !SKP.data.profile.masked) profileSheet(); }); return; }
   var p = SKP.data.profile || {};
   var f = function (id, label, v, type, ph) { return '<div class="field"><label for="' + id + '">' + label + '</label><input id="' + id + '" type="' + (type || 'text') + '" value="' + esc(v) + '"' + (ph ? ' placeholder="' + esc(ph) + '"' : '') + '></div>'; };
-  openSheet('<h2>Ubah data sekolah</h2>' + f('pPic', 'Nama PIC', p.pic) + f('pRole', 'Jabatan PIC', p.role, '', 'Contoh: Bendahara BOS') + f('pPhone', 'No HP PIC', p.phone, 'tel', '0812 3456 7890') +
-    f('pKs', 'Nama Kepala Sekolah', p.kepsek) + f('pKsPhone', 'No HP Kepala Sekolah', p.kepsekPhone, 'tel', '0812 3456 7890') +
+  var req = ' <span class="req" aria-hidden="true">*</span>'; // 22 Nov: PIC and Kepala Sekolah are required
+  openSheet('<h2>Ubah data sekolah</h2><p class="muted small" style="margin-top:-6px"><span class="req">*</span> wajib diisi</p>' + f('pPic', 'Nama PIC' + req, p.pic) + f('pRole', 'Jabatan PIC', p.role, '', 'Contoh: Bendahara BOS') + f('pPhone', 'No HP PIC' + req, p.phone, 'tel', '0812 3456 7890') +
+    f('pKs', 'Nama Kepala Sekolah' + req, p.kepsek) + f('pKsPhone', 'No HP Kepala Sekolah' + req, p.kepsekPhone, 'tel', '0812 3456 7890') +
     f('pEmail', 'Email', p.email, 'email') + '<div class="field"><label for="pAddr">Alamat kirim</label><textarea id="pAddr" placeholder="Alamat lengkap sekolah">' + esc(p.address) + '</textarea></div>' +
     '<h2 style="margin-top:22px">Rekening sekolah</h2><p class="muted small" style="margin-top:-6px">Untuk pembayaran cash back dari SNAPP. Hanya terlihat oleh sekolah Anda dan admin SNAPP.</p>' +
     f('pBank', 'Bank', p.bank, '', 'Contoh: BJB') + f('pAcc', 'No rekening', p.account, 'text') + f('pHolder', 'Atas nama', p.holder) +
@@ -1157,7 +1366,7 @@ function saveProfile() {
   var p = { pic: v('pPic'), role: v('pRole'), phone: v('pPhone'), kepsek: v('pKs'), kepsekPhone: v('pKsPhone'), email: v('pEmail'), address: v('pAddr'), bank: v('pBank'), account: v('pAcc'), holder: v('pHolder') };
   if (!opStart('profile')) return;
   busy(true, 'Menyimpan...');
-  call('skpProfile', SKP.token, p).then(function (r) { opEnd(); busy(false); SKP.data.profile = r; store('skp_home', JSON.stringify(SKP.data)); closeSheet(); render(); toast('Data sekolah disimpan.', true); })
+  call('skpProfile', SKP.token, p).then(function (r) { opEnd(); busy(false); SKP.data.profile = r; SKP.data.needProfile = []; store('skp_home', JSON.stringify(SKP.data)); closeSheet(); render(); toast('Data sekolah disimpan.', true); })
     .catch(function (e) { opEnd(); busy(false); showErr('pErr', e.message); });
 }
 
@@ -1181,6 +1390,10 @@ $('sheet').addEventListener('click', function (e) { if (e.target === $('sheet'))
 })();
 window.addEventListener('resize', function () { if (SKP.data) navInd(navOf(SKP.view)); });
 $('lgBtn').addEventListener('click', doLogin);
+$('lgGoogle').innerHTML = SKP_G + 'Masuk dengan Google';
+$('lgGoogle').addEventListener('click', googleLogin);
+if (!(window.SKP_API || {}).google) { $('lgGoogle').classList.add('hide'); document.querySelector('#vLogin .ordiv').classList.add('hide'); } // no SNAPP Google client yet: phone number only
+$('lgSign').addEventListener('click', function () { SKP.g = null; showSignup(); });
 $('lgSchools').innerHTML = ['sch_1', 'sch_2', 'sch_3', 'sch_4'].map(function (k) { return '<img src="' + SKP_ART[k] + '" alt="" width="62" height="62">'; }).join('');
 $('lgPin').addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
 (function nativeSetup() {
