@@ -8,7 +8,7 @@
 <meta name="robots" content="noindex">
 <link rel="icon" href="icon.png">
 <link rel="apple-touch-icon" href="icon.png">
-<script>window.SKP_API = {"url":"https://script.google.com/macros/s/AKfycbwzm6vI7CH0DHvUhK8n6pCoSvNnOQgrvN453tYC5upts-OmrElAP5eH-1k0rrLAGQy5/exec","version":"1.2.0","mode":"prod","google":"701531555815-leu2up5ulu9ju2lm711c1dhkcpld24c4.apps.googleusercontent.com","privacy":"https://pelanggan.sadyakersa.com/privasi/"};</script>
+<script>window.SKP_API = {"url":"https://script.google.com/macros/s/AKfycbwzm6vI7CH0DHvUhK8n6pCoSvNnOQgrvN453tYC5upts-OmrElAP5eH-1k0rrLAGQy5/exec","version":"1.2.2","mode":"prod","google":"701531555815-leu2up5ulu9ju2lm711c1dhkcpld24c4.apps.googleusercontent.com","privacy":"https://pelanggan.sadyakersa.com/privasi/"};</script>
 <meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
@@ -421,7 +421,7 @@
 <div id="vSignup" class="login hide"></div>
 
 <div id="vApp" class="hide">
-  <div id="updBar" class="updbar hide" role="status">Ada versi baru aplikasi. Perbarui aplikasi untuk melanjutkan.</div>
+  <div id="updBar" class="updbar hide" role="status">Ada versi baru aplikasi. Update aplikasi dulu untuk lanjut.</div>
   <div class="top"><div class="in" id="topBar"></div></div>
   <div class="wrap" id="main"></div>
   <div class="nav"><div class="in">
@@ -527,14 +527,14 @@ function call(fn) {
     .then(function (r) { clearTimeout(timer); if (!r.ok) throw new Error('Koneksi bermasalah (HTTP ' + r.status + '). Coba lagi.'); return r.text(); },
       function (e) {
         clearTimeout(timer);
-        throw new Error(e && e.name === 'AbortError' ? 'Server lambat menjawab. Cek dulu apakah sudah tersimpan sebelum mengirim ulang.' : 'Tidak ada koneksi internet. Coba lagi.');
+        throw new Error(e && e.name === 'AbortError' ? 'Server lambat merespons. Cek dulu apakah sudah tersimpan sebelum mengirim ulang.' : 'Tidak ada koneksi internet. Coba lagi.');
       })
     .then(function (txt) {
-      var j; try { j = JSON.parse(txt); } catch (e) { throw new Error('Jawaban server tidak terbaca. Coba lagi.'); }
+      var j; try { j = JSON.parse(txt); } catch (e) { throw new Error('Data dari server tidak terbaca. Coba lagi.'); }
       if (j && j.ok) { $('updBar').classList.add('hide'); return j.data; }
-      if (j && j.error === 'UPDATE_APP') { $('updBar').classList.remove('hide'); throw new Error('Versi aplikasi ini sudah lama. Perbarui aplikasi.'); }
+      if (j && j.error === 'UPDATE_APP') { $('updBar').classList.remove('hide'); throw new Error('Versi aplikasi ini sudah lama. Update aplikasi dulu.'); }
       if (j && j.error === 'SESI_HABIS') { if (sess === SKP_SESS) logoutLocal('Sesi habis, silakan masuk lagi.'); throw new Error('Sesi habis, silakan masuk lagi.'); }
-      throw new Error(j && j.error ? j.error : 'Server tidak menjawab.');
+      throw new Error(j && j.error ? j.error : 'Server tidak merespons.');
     });
   var stale = function () { return new Promise(function () {}); }; // dropped: the user logged out or switched school meanwhile
   return p.then(function (d) { return sess === SKP_SESS ? d : stale(); }, function (e) { if (sess !== SKP_SESS) return stale(); throw e; });
@@ -639,7 +639,7 @@ function showSignup() {
     f('sgPicPhone', 'No HP PIC', 'tel', '0812 3456 7890', ' inputmode="tel"') +
     f('sgKs', 'Nama Kepala Sekolah') + f('sgKsPhone', 'No HP Kepala Sekolah', 'tel', '0812 3456 7890', ' inputmode="tel"') +
     '<p class="muted small" style="margin:14px 0 0"><span class="req">*</span> wajib diisi</p></div>' +
-    '<div class="note">Setelah daftar, admin SNAPP mengecek data sekolah Anda. Invoice, kiriman dan rekening sekolah terbuka setelah dikonfirmasi.</div>' +
+    '<div class="note">Setelah daftar, admin SNAPP mengecek data sekolah Anda. Invoice, kiriman dan rekening sekolah bisa diakses setelah dikonfirmasi.</div>' +
     '<div id="sgErr" class="err hide"></div><button class="btn cta block" style="margin-top:16px;min-height:58px;font-size:18px" onclick="doSignup()">Daftar</button>' +
     '<p class="muted small" style="margin-top:14px">Sudah punya akun? <a href="#" onclick="hideSignup();return false">Masuk</a></p>';
   $('vSignup').classList.remove('hide');
@@ -687,11 +687,11 @@ function vWait(d) {
     '<div class="hbpill">' + SKP_ICON.clock + 'Sedang dicek admin SNAPP</div></div>' +
     '<span class="hbschool"><img src="' + schoolArt(s.school) + '" alt="" width="58" height="58">' + (jj ? '<i>' + jj + '</i>' : '') + '</span></div>');
   var lock = function (icon, t, sub) { return '<div class="item locked"><span class="lic grey">' + icon + '</span><span class="t"><b>' + t + '</b><span>' + sub + '</span></span></div>'; };
-  var h = '<div class="float lift"><div class="track lt" style="--n:3;--p:.5"><span class="fill"></span><div class="on">Daftar</div><div class="now">Dicek admin</div><div>Semua terbuka</div></div>' +
+  var h = '<div class="float lift"><div class="track lt" style="--n:3;--p:.5"><span class="fill"></span><div class="on">Daftar</div><div class="now">Dicek admin</div><div>Akses penuh</div></div>' +
     '<p style="margin:14px 0 0">Terima kasih sudah mendaftar. Admin SNAPP sedang mencocokkan data sekolah Anda, dan bisa menghubungi PIC lewat WhatsApp bila perlu.</p></div>';
   h += '<div class="caption">Sudah bisa dipakai</div><button class="item" onclick="go(\'file\')"><span class="lic">' + SKP_ICON.upload + '</span><span class="t"><b>Kirim file order</b><span>' +
     ((d.files || []).length ? d.files.length + ' file sudah terkirim' : 'Excel, PDF atau foto daftar order') + '</span></span>' + SKP_CHEV + '</button>';
-  h += '<div class="caption">Terbuka setelah dikonfirmasi</div>' + lock(SKP_ICON.receipt, 'Invoice dan status bayar', 'Semua invoice sekolah Anda') +
+  h += '<div class="caption">Bisa diakses setelah dikonfirmasi</div>' + lock(SKP_ICON.receipt, 'Invoice dan status bayar', 'Semua invoice sekolah Anda') +
     lock(SKP_ICON.truck, 'Kiriman dan surat jalan', 'Konfirmasi barang diterima') + lock(SKP_ICON.wallet, 'Rekening sekolah', 'Untuk pembayaran cash back');
   h += '<div class="caption">Data pendaftaran</div><div class="card"><dl class="kv rows"><dt>Sekolah</dt><dd>' + esc(s.school) + '<br><span class="muted small">' + esc(s.area) + '</span></dd>' +
     '<dt>PIC</dt><dd>' + esc(s.pic) + '<br><span class="muted small">' + esc(s.role) + ' · ' + esc(s.picPhone) + '</span></dd>' +
@@ -731,12 +731,12 @@ function saveWait() {
 function vNeed(d) {
   setTop('<div class="hbrow"><div class="brandrow"><span class="mark">' + SKP_MARK + '</span><div class="hbname"><b>SNAPP</b><span>' + esc(d.me.name) + '</span></div></div></div>');
   return '<div class="float"><span class="lic amber">' + SKP_ICON.alert + '</span><h2 style="margin-top:12px">Lengkapi data sekolah dulu</h2>' +
-    '<p style="margin:0">Akun Anda sudah dikonfirmasi. Sebelum lanjut, isi data yang wajib ini: <b>' + esc(d.needProfile.join(', ')) + '</b>.</p>' +
+    '<p style="margin:0">Akun Anda sudah dikonfirmasi. Sebelum lanjut, lengkapi dulu data wajib ini: <b>' + esc(d.needProfile.join(', ')) + '</b>.</p>' +
     '<button class="btn cta block" style="margin-top:16px;min-height:56px" onclick="profileSheet()">Lengkapi sekarang</button></div>';
 }
 function deleteSheet() {
   var me = SKP.data.me || {}, pin = me.via === 'hp';
-  openSheet('<h2>Hapus akun?</h2><p style="margin-top:-4px">Login Anda (' + esc(pin ? me.phone : me.email) + ') dan data pribadi Anda di SNAPP dihapus, dan semua HP keluar. ' +
+  openSheet('<h2>Hapus akun?</h2><p style="margin-top:-4px">Login Anda (' + esc(pin ? me.phone : me.email) + ') dan data pribadi Anda di SNAPP dihapus, dan semua HP otomatis logout. ' +
     'Invoice dan surat jalan sekolah tetap tersimpan untuk keperluan pajak.</p>' +
     (pin ? '<div class="field"><label for="dConf">Masukkan PIN Anda</label><input id="dConf" class="pin" type="password" inputmode="numeric" maxlength="6" placeholder="......"></div>'
       : '<div class="field"><label for="dConf">Ketik HAPUS untuk lanjut</label><input id="dConf" type="text" autocapitalize="characters" placeholder="HAPUS"></div>') +
@@ -854,7 +854,7 @@ function remindAfterHome(d) {
     remindNotify(list);
     if (!list.length || store('skp_pop') === today || !$('sheet').classList.contains('hide')) return;
     store('skp_pop', today);
-    openSheet('<h2>Pengingat hari ini</h2>' + list.map(function (x) {
+    openSheet('<h2>Reminder hari ini</h2>' + list.map(function (x) {
       return '<button class="item" onclick="remindGo(\'' + jsq(x[1]) + '\')"><span class="t"><b>' + esc(x[0]) + '</b></span>' + SKP_ICON.right + '</button>';
     }).join('') + '<button class="btn block" style="margin-top:12px" onclick="closeSheet()">Tutup</button>');
   } catch (e) { return; } // never blocks the home screen
@@ -875,7 +875,7 @@ function remindNotify(list) {
       var at = new Date(); at.setHours(8, 0, 0, 0);
       if (at <= new Date()) at.setDate(at.getDate() + 1);
       // isExactNotification false (17 Nov): otherwise the plugin opens Android's "Alarms and reminders" screen each time
-      return ln.schedule({ notifications: [{ id: 81, title: 'SNAPP: pengingat', body: list.map(function (x) { return x[0]; }).join('. ') + '.', schedule: { at: at }, isExactNotification: false }] });
+      return ln.schedule({ notifications: [{ id: 81, title: 'SNAPP: reminder', body: list.map(function (x) { return x[0]; }).join('. ') + '.', schedule: { at: at }, isExactNotification: false }] });
     });
   }).catch(function () {});
 }
@@ -985,13 +985,13 @@ function vHome(d) {
   setTop('<div class="hbrow"><div class="brandrow"><span class="mark">' + SKP_MARK + '</span><div class="hbname"><b>SNAPP</b><span>Aplikasi sekolah</span></div></div>' +
     '<button class="iconbtn" onclick="refreshHome(this)" aria-label="Muat ulang">' + SKP_ICON.reload + '</button></div>' +
     '<div class="hbmain"><div class="hbtext"><div class="sub">Selamat ' + waktu() + '</div><h1>' + esc(d.me.name) + '</h1>' +
-    '<div class="hbpill' + (need ? '' : ' ok') + '">' + (need ? SKP_ICON.alert + need + ' hal perlu tindakan' : SKP_ICON.okc + 'Semua kiriman dan invoice aman') + '</div></div>' +
+    '<div class="hbpill' + (need ? '' : ' ok') + '">' + (need ? SKP_ICON.alert + need + ' hal perlu dicek' : SKP_ICON.okc + 'Semua kiriman dan invoice aman') + '</div></div>' +
     '<span class="hbschool"><img src="' + schoolArt(d.me.name) + '" alt="" width="58" height="58">' + (jj ? '<i>' + jj + '</i>' : '') + '</span></div>');
   var h = '<div class="float lift rise" style="--i:0"><div class="stats">' +
     '<button' + (t.toConfirm ? ' class="warn"' : '') + ' onclick="go(\'kirim\')"><span class="si">' + SKP_ICON.truck + '</span><b>' + t.toConfirm + '</b><span>kiriman perlu dikonfirmasi</span></button>' +
     '<button' + (t.toVerify ? ' class="warn"' : '') + ' onclick="SKP.filter=\'cek\';go(\'inv\')"><span class="si o">' + SKP_ICON.clip + '</span><b>' + t.toVerify + '</b><span>invoice perlu dicek</span></button>' +
     '<button onclick="SKP.filter=\'belum\';go(\'inv\')"><span class="si r">' + SKP_ICON.wallet + '</span><b>' + esc(rpShort(t.unpaid)) + '</b><span>belum lunas, ' + t.unpaidCount + ' invoice</span></button></div></div>';
-  h += '<div class="caption">Perlu tindakan</div>' + (todo.length ? todo.join('') : '<div class="card rise empty" style="--i:1"><span class="lic green">' + SKP_ICON.okc + '</span><span class="muted">Tidak ada yang perlu ditindaklanjuti. Terima kasih.</span></div>');
+  h += '<div class="caption">Perlu dicek</div>' + (todo.length ? todo.join('') : '<div class="card rise empty" style="--i:1"><span class="lic green">' + SKP_ICON.okc + '</span><span class="muted">Tidak ada yang perlu dicek. Terima kasih.</span></div>');
   if ((d.waiting || []).length) h += '<div class="caption">Order sedang diproses</div>' + d.waiting.map(function (o) {
     return '<div class="item"><span class="lic">' + SKP_ICON.cart + '</span><span class="t"><b>Order ' + esc(tgl(o.date)) + '</b><span>' + o.lines.map(function (l) { return qty(l[1]) + ' ' + l[2] + ' ' + l[0]; }).map(esc).join(', ') + '</span><span class="tags"><i class="tag amber">Menunggu konfirmasi SNAPP</i></span></span></div>';
   }).join('');
@@ -1034,8 +1034,8 @@ function track(labels, at, cls) {
 function docBtns(fn, key, kind) {
   var k = jsq(key);
   return '<div class="btnrow" style="margin-top:14px"><button class="btn brand" onclick="docRun(\'print\',\'' + fn + '\',\'' + k + '\')">' + SKP_ICON.print + 'Cetak</button>' +
-    '<button class="btn" onclick="docRun(\'pdf\',\'' + fn + '\',\'' + k + '\')">' + SKP_ICON.download + 'Unduh PDF</button></div>' +
-    '<button class="btn quiet" onclick="docSheet(\'' + kind + '\',\'' + k + '\')">' + SKP_ICON.doc + 'Lihat tampilan dokumen</button>';
+    '<button class="btn" onclick="docRun(\'pdf\',\'' + fn + '\',\'' + k + '\')">' + SKP_ICON.download + 'Download</button></div>' +
+    '<button class="btn quiet" onclick="docSheet(\'' + kind + '\',\'' + k + '\')">' + SKP_ICON.doc + 'Preview dokumen</button>';
 }
 // 13 Nov (Firman): the documents carry the company of the order (column CV) top right with its logo,
 // sign with it as sender, and end with the print date, time and company, as the PDF does.
@@ -1057,7 +1057,7 @@ function sjDoc(s, d) {
     '<div class="docschool">' + esc(d.me.name) + '</div>' +
     '<dl class="kv"><dt>No.</dt><dd>' + esc(s.inv) + '</dd><dt>Tanggal</dt><dd>' + esc(tglPanjang(s.date)) + '</dd><dt>PIC</dt><dd>' + esc(p.pic || '-') + '</dd>' +
     '<dt>No. Telp</dt><dd>' + esc(p.phone || '-') + '</dd><dt>Alamat</dt><dd style="white-space:pre-wrap">' + esc(s.address) + '</dd></dl>' +
-    '<p class="small" style="margin:14px 0 0">Berikut kami kirimkan barang-barang sebagai berikut:</p>' +
+    '<p class="small" style="margin:14px 0 0">Bersama ini kami kirimkan barang-barang sebagai berikut:</p>' +
     '<table class="dtab"><thead><tr><th class="no">No</th><th>Nama barang</th><th class="n">Jumlah</th><th class="ck">Cek</th></tr></thead><tbody>' + s.lines.map(function (l, i) {
       var c = s.checks && s.checks[i];
       return '<tr><td>' + (i + 1) + '</td><td>' + esc(l.item) + '</td><td class="n">' + esc(qty(l.qty)) + ' ' + esc(l.unit) + '</td><td class="ck">' +
@@ -1080,10 +1080,10 @@ function invDoc(i, d) {
 function docSheet(kind, key) {
   var d = SKP.data, x = kind === 'sj' ? sjOf(key) : invOf(key), fn = kind === 'sj' ? 'skpSjPdf' : 'skpInvPdf', k = jsq(key);
   if (!x) return;
-  openSheet('<h2>Tampilan dokumen</h2><p class="muted small" style="margin:-4px 0 14px">Begini ' + (kind === 'sj' ? 'surat jalan' : 'invoice') + ' ini saat dicetak atau diunduh.</p>' +
+  openSheet('<h2>Preview dokumen</h2><p class="muted small" style="margin:-4px 0 14px">Ini tampilan ' + (kind === 'sj' ? 'surat jalan' : 'invoice') + ' saat dicetak atau di-download.</p>' +
     '<div class="paper">' + (kind === 'sj' ? sjDoc(x, d) : invDoc(x, d)) + '</div>' +
     '<div class="btnrow" style="margin-top:16px"><button class="btn brand" onclick="docRun(\'print\',\'' + fn + '\',\'' + k + '\')">' + SKP_ICON.print + 'Cetak</button>' +
-    '<button class="btn" onclick="docRun(\'pdf\',\'' + fn + '\',\'' + k + '\')">' + SKP_ICON.download + 'Unduh PDF</button></div>');
+    '<button class="btn" onclick="docRun(\'pdf\',\'' + fn + '\',\'' + k + '\')">' + SKP_ICON.download + 'Download</button></div>');
 }
 function vstate(c, icon, title, sub) {
   return '<div class="vstate ' + c + '"><span class="lic ' + c + '">' + icon + '</span><div><b>' + title + '</b>' + (sub ? '<div class="muted small">' + sub + '</div>' : '') + '</div></div>';
@@ -1140,7 +1140,7 @@ function docRun(mode, fn) {
   busy(true, mode === 'print' ? 'Menyiapkan cetak...' : 'Membuat PDF...');
   call.apply(null, [fn, docToken()].concat(args)).then(function (r) {
     opEnd();
-    if (phoneWeb) toast('PDF diunduh. Buka file itu untuk mencetak dari HP.');
+    if (phoneWeb) toast('PDF sudah di-download. Buka file-nya untuk cetak dari HP.');
     if (mode === 'print') {
       var pr = docPlugin('SkPrint');
       if (pr) return pr.printPdf({ base64: r.b64, name: r.name }).then(function () { busy(false); });
@@ -1257,7 +1257,7 @@ function filePicked(input) {
   var bad = list.filter(function (f) { return !SKP_FILE_EXT.test(f.name); })[0], big = list.filter(function (f) { return f.size > 10485760; })[0];
   if (bad) err = bad.name + ': hanya file Excel, PDF atau gambar.';
   else if (big) err = big.name + ': lebih dari 10 MB.';
-  else if (list.reduce(function (t, f) { return t + f.size; }, 0) > 15728640) err = 'Total file lebih dari 15 MB. Kirim dalam beberapa kali.';
+  else if (list.reduce(function (t, f) { return t + f.size; }, 0) > 15728640) err = 'Total file lebih dari 15 MB. Kirim bertahap.';
   SKP.pick = err ? [] : list; SKP.upId = Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   render();
   if (err) { var el = $('fuErr'); el.textContent = err; el.classList.remove('hide'); }
@@ -1305,7 +1305,7 @@ function vInvD(d) {
     (i.received ? '<dt>Barang diterima</dt><dd>' + esc(tglPanjang(i.received)) + '</dd>' : '') + (i.status !== 'Lunas' && i.due ? '<dt>Jatuh tempo</dt><dd>' + esc(tglPanjang(i.due)) + '</dd>' : '') +
     (i.mkt && i.mkt !== '-' ? '<dt>Melalui</dt><dd>' + esc(i.mkt) + '</dd>' : '') +
     '<dt>Status bayar</dt><dd>' + (i.status === 'Lunas' ? 'Lunas' + (i.paidDate ? ' ' + esc(tgl(i.paidDate)) : '') : 'Belum lunas') + '</dd></dl>' +
-    '<div class="muted small" style="margin-top:8px">Status lunas diperbarui admin SNAPP setelah pembayaran diterima.</div></div>';
+    '<div class="muted small" style="margin-top:8px">Status lunas di-update admin SNAPP setelah pembayaran diterima.</div></div>';
   h += '<div class="caption">Barang, ' + i.lines.length + ' jenis</div><div class="card"><table class="ilist" aria-label="Barang di invoice"><tbody>' + i.lines.map(function (l, n) {
     return '<tr><td class="ino"><span>' + (n + 1) + '</span></td><td><b>' + esc(l[0] || 'Barang') + '</b><span class="q">' + esc(qty(l[1])) + ' ' + esc(l[2]) + '</span></td><td class="iv">' + esc(num(l[3])) + '</td></tr>';
   }).join('') + '</tbody><tfoot><tr><td colspan="2">Total</td><td class="iv">' + esc(rp(i.total)) + '</td></tr></tfoot></table>' +
@@ -1322,7 +1322,7 @@ function vInvD(d) {
   else if (!i.canVerify) h += vstate('grey', i.status === 'Lunas' ? SKP_ICON.okc : SKP_ICON.clock, i.status === 'Lunas' ? 'Sudah lunas' : 'Belum bisa dicek',
     i.sj.length ? 'Konfirmasi dulu semua barang yang diterima di menu Kiriman, lalu cek invoice ini.' : i.status === 'Lunas' ? 'Invoice ini sudah lunas.' : 'Invoice bisa dicek setelah barang dikirim dan diterima.');
   else h += vstate('', SKP_ICON.clip, 'Cek invoice ini', 'Barang sudah diterima. Apakah barang, jumlah dan nilai di invoice ini sesuai?');
-  if (i.canVerify) h += (v ? '<p class="small" style="margin:12px 0 0">Bila sudah sesuai setelah tanggapan, tandai sesuai:</p>' : '') +
+  if (i.canVerify) h += (v ? '<p class="small" style="margin:12px 0 0">Kalau sudah beres setelah tanggapan SNAPP, tandai sesuai:</p>' : '') +
     '<div class="btnrow"><button class="btn cta" onclick="verifyOk(\'' + jsq(i.inv) + '\')">' + SKP_ICON.check + 'Invoice sesuai</button>' + (v ? '' : '<button class="btn" onclick="verifyBadSheet(\'' + jsq(i.inv) + '\')">Ada yang tidak sesuai</button>') + '</div>';
   return h + '</div>';
 }
@@ -1416,7 +1416,7 @@ $('lgPin').addEventListener('keydown', function (e) { if (e.key === 'Enter') doL
   if (launcher) document.addEventListener('click', function (e) {
     var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
     if (!a || !/^(tel:|https?:)/.test(a.getAttribute('href'))) return;
-    e.preventDefault(); launcher.openUrl({ url: a.getAttribute('href') }).catch(function () { toast('Tautan tidak bisa dibuka di HP ini.'); });
+    e.preventDefault(); launcher.openUrl({ url: a.getAttribute('href') }).catch(function () { toast('Link tidak bisa dibuka di HP ini.'); });
   });
   if (app) app.addListener('backButton', function () {
     if (SKP.op) return; // a send is running
