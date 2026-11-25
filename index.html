@@ -637,27 +637,46 @@ function showSignup() {
       SKP_AREAS.map(function (a) { return '<option' + (keep.sgArea === a ? ' selected' : '') + '>' + esc(a) + '</option>'; }).join('') + '</select></div>' +
     f('sgPic', 'Nama PIC', '', 'Penanggung jawab di sekolah') + f('sgRole', 'Jabatan PIC', '', 'Contoh: Bendahara BOS') +
     f('sgPicPhone', 'No HP PIC', 'tel', '0812 3456 7890', ' inputmode="tel"') +
-    f('sgKs', 'Nama Kepala Sekolah') + f('sgKsPhone', 'No HP Kepala Sekolah', 'tel', '0812 3456 7890', ' inputmode="tel"') +
+    f('sgKs', 'Nama Kepala Sekolah') + f('sgKsPhone', 'No HP Kepala Sekolah', 'tel', '0812 3456 7890', ' inputmode="tel"') + '</div>' +
+    '<div class="caption">3. Marketing Sadya Kersa</div><div class="lcard"><div id="sgMktBox">' + mktField(keep.sgMkt || '', 'sgMkt') + '</div>' +
     '<p class="muted small" style="margin:14px 0 0"><span class="req">*</span> wajib diisi</p></div>' +
     '<div class="note">Setelah daftar, admin SNAPP mengecek data sekolah Anda. Invoice, kiriman dan rekening sekolah bisa diakses setelah dikonfirmasi.</div>' +
     '<div id="sgErr" class="err hide"></div><button class="btn cta block" style="margin-top:16px;min-height:58px;font-size:18px" onclick="doSignup()">Daftar</button>' +
     '<p class="muted small" style="margin-top:14px">Sudah punya akun? <a href="#" onclick="hideSignup();return false">Masuk</a></p>';
   $('vSignup').classList.remove('hide');
+  if (!SKP.mk || SKP.mk.err) loadMkt('sgMkt');
   var ph = $('sgPhone'), pp = $('sgPicPhone');
   if (ph && pp) ph.addEventListener('blur', function () { if (!pp.value.trim()) pp.value = ph.value; }); // usually the PIC signs up with their own number
   window.scrollTo(0, 0);
+}
+// 25 Nov (Muji: "they also need to input marketing name that refer that scholl ... dropdown marketing name not free fill")
+function mktField(v, id) {
+  var l = SKP.mk, lab = '<label for="' + id + '">Nama marketing <span class="req" aria-hidden="true">*</span></label>';
+  if (!Array.isArray(l)) return '<div class="field">' + lab + '<select id="' + id + '" disabled><option value="">' + (l && l.err ? 'Daftar marketing belum bisa dimuat' : 'Memuat daftar marketing...') + '</option></select>' +
+    (l && l.err ? '<button class="btn quiet" type="button" style="margin-top:8px" onclick="SKP.mk=null;loadMkt(\'' + id + '\')">Coba lagi</button>' : '') + '</div>';
+  return '<div class="field">' + lab + '<select id="' + id + '"><option value="">Pilih marketing</option>' + l.map(function (n) { return '<option' + (v === n ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') +
+    '</select><p class="muted small" style="margin:6px 0 0">Marketing Sadya Kersa yang mengajak sekolah Anda daftar SNAPP.</p></div>';
+}
+function loadMkt(id) {
+  if (SKP.mkLoading) return;
+  SKP.mkLoading = true;
+  call('skpMarketing').then(function (r) { SKP.mk = (r && r.marketing) || []; }).catch(function (e) { SKP.mk = { err: e.message }; }).then(function () {
+    SKP.mkLoading = false;
+    var box = $(id + 'Box'), cur = $(id);
+    if (box) box.innerHTML = mktField((cur && cur.value) || (SKP.sg || {})[id] || ((SKP.data || {}).signup || {}).marketing || '', id);
+  });
 }
 function hideSignup() { signupKeep(); $('vSignup').classList.add('hide'); showLogin(''); }
 // What was typed stays when the form is drawn again (Google picked, back and forth); never the PIN.
 function signupKeep() {
   var k = SKP.sg = SKP.sg || {};
-  ['sgPhone', 'sgSchool', 'sgArea', 'sgPic', 'sgRole', 'sgPicPhone', 'sgKs', 'sgKsPhone'].forEach(function (id) { if ($(id)) k[id] = $(id).value; });
+  ['sgPhone', 'sgSchool', 'sgArea', 'sgPic', 'sgRole', 'sgPicPhone', 'sgKs', 'sgKsPhone', 'sgMkt'].forEach(function (id) { if ($(id)) k[id] = $(id).value; });
 }
 function doSignup() {
   if (SKP.op) return;
   signupKeep();
   var k = SKP.sg, phoneOk = function (v) { return /^(\+?62|0)?8\d{7,12}$/.test(String(v || '').replace(/[\s.-]+/g, '')); };
-  var p = { school: k.sgSchool, area: k.sgArea, pic: k.sgPic, role: k.sgRole, picPhone: k.sgPicPhone, kepsek: k.sgKs, kepsekPhone: k.sgKsPhone };
+  var p = { school: k.sgSchool, area: k.sgArea, pic: k.sgPic, role: k.sgRole, picPhone: k.sgPicPhone, kepsek: k.sgKs, kepsekPhone: k.sgKsPhone, marketing: k.sgMkt || '' };
   var err = '';
   if (SKP.g) { p.via = 'google'; p.idToken = SKP.g.token; }
   else {
@@ -672,6 +691,7 @@ function doSignup() {
   else if (!err && !phoneOk(p.picPhone)) err = 'Nomor HP PIC tidak valid. Contoh: 0812 3456 7890.';
   else if (!err && !String(p.kepsek || '').trim()) err = 'Isi nama Kepala Sekolah.';
   else if (!err && !phoneOk(p.kepsekPhone)) err = 'Nomor HP Kepala Sekolah tidak valid. Contoh: 0812 3456 7890.';
+  else if (!err && !p.marketing) err = Array.isArray(SKP.mk) ? 'Pilih nama marketing yang mengajak sekolah Anda.' : 'Daftar marketing belum termuat. Tap Coba lagi di bagian Marketing.';
   if (err) { showErr('sgErr', err); return; }
   opStart('signup'); busy(true, 'Mendaftarkan...');
   call('skpSignup', p, true).then(function (r) { opEnd(); SKP.sg = null; return loginDone(r, p.via === 'hp' ? p.phone : ''); })
@@ -695,7 +715,8 @@ function vWait(d) {
     lock(SKP_ICON.truck, 'Kiriman dan surat jalan', 'Konfirmasi barang diterima') + lock(SKP_ICON.wallet, 'Rekening sekolah', 'Untuk pembayaran cash back');
   h += '<div class="caption">Data pendaftaran</div><div class="card"><dl class="kv rows"><dt>Sekolah</dt><dd>' + esc(s.school) + '<br><span class="muted small">' + esc(s.area) + '</span></dd>' +
     '<dt>PIC</dt><dd>' + esc(s.pic) + '<br><span class="muted small">' + esc(s.role) + ' · ' + esc(s.picPhone) + '</span></dd>' +
-    '<dt>Kepala Sekolah</dt><dd>' + esc(s.kepsek) + '<br><span class="muted small">' + esc(s.kepsekPhone) + '</span></dd></dl>' +
+    '<dt>Kepala Sekolah</dt><dd>' + esc(s.kepsek) + '<br><span class="muted small">' + esc(s.kepsekPhone) + '</span></dd>' +
+    '<dt>Marketing</dt><dd>' + esc(s.marketing || 'Belum diisi') + '</dd></dl>' +
     '<button class="btn block" style="margin-top:14px" onclick="waitEditSheet()">Ubah data pendaftaran</button></div>';
   return h + accountCard(d);
 }
@@ -717,11 +738,14 @@ function waitEditSheet() {
     '<div class="field"><label for="wArea">Wilayah <span class="req" aria-hidden="true">*</span></label><select id="wArea">' + SKP_AREAS.map(function (a) { return '<option' + (s.area === a ? ' selected' : '') + '>' + esc(a) + '</option>'; }).join('') + '</select></div>' +
     f('wPic', 'Nama PIC', s.pic) + f('wRole', 'Jabatan PIC', s.role) + f('wPicPhone', 'No HP PIC', s.picPhone, 'tel', '0812 3456 7890') +
     f('wKs', 'Nama Kepala Sekolah', s.kepsek) + f('wKsPhone', 'No HP Kepala Sekolah', s.kepsekPhone, 'tel', '0812 3456 7890') +
+    '<div id="wMktBox">' + mktField(s.marketing || '', 'wMkt') + '</div>' +
     '<div id="wErr" class="err hide"></div><div class="btnrow"><button class="btn" onclick="closeSheet()">Batal</button><button class="btn brand" onclick="saveWait()">Simpan</button></div>');
+  if (!Array.isArray(SKP.mk)) loadMkt('wMkt');
 }
 function saveWait() {
   var v = function (id) { return $(id).value; };
   var p = { school: v('wSchool'), area: v('wArea'), pic: v('wPic'), role: v('wRole'), picPhone: v('wPicPhone'), kepsek: v('wKs'), kepsekPhone: v('wKsPhone') };
+  if ($('wMkt') && !$('wMkt').disabled) p.marketing = v('wMkt'); // only once the list is there
   if (!opStart('wait')) return;
   busy(true, 'Menyimpan...');
   call('skpProfile', SKP.token, p).then(function (r) { opEnd(); busy(false); SKP.data.signup = Object.assign({}, SKP.data.signup, r.signup); store('skp_home', JSON.stringify(SKP.data)); closeSheet(); render(); toast('Data pendaftaran disimpan.', true); })
